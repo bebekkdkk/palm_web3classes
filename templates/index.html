@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palm Oil Quality Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="precon            try 
+                // Show loading states
+                showLoading(true);
+                document.getElementById('resultsSection').style.display = 'block';
+                document.getElementById('imagePlaceholder').classList.add('d-none');
+                showImageLoading(true);
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                    document.getElementById('imagePlaceholder').classList.remove('d-none');
+                    showImageLoading(false);
+                    return;
+                }
+
+                // Smooth scroll to results
+                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });//fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        :root {
+            --bs-primary: #0d6efd;
+            --bs-success: #198754;
+            --bs-warning: #ffc107;
+            --bs-danger: #dc3545;
+            --bs-info: #0dcaf0;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .container {
+            max-width: 1400px;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            font-size: 1.4rem;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            padding: 0.8rem 1rem !important;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--bs-primary) !important;
+            background: rgba(13, 110, 253, 0.05);
+            border-radius: 6px;
+        }
+
+        /* Card and Section Styles */
+        .card {
+            border: none;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Grid and Image Styles */
+        .crop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .crop-card {
+            border: 1px solid #eee;
+            padding: 1rem;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .crop-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .crop-image {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: transform 0.3s;
+        }
+
+        .crop-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* Button and Badge Styles */
+        .class-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .class-button {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .class-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .confidence-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* List and Text Styles */
+        .list-group-item {
+            padding: 1rem;
+            border-color: #eee;
+            transition: background-color 0.2s;
+        }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .display-4 {
+            font-weight: 600;
+        }
+
+        /* Animation Styles */
+        .animate__animated {
+            animation-duration: 0.6s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Toast Styles */
+        .toast {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+
+        /* Form Styles */
+        .form-control {
+            border: 2px solid #eee;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+        }
+
+        .btn-success {
+            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.15);
+        }
+
+        /* Image Processing Section */
+        #processedImage {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            transition: transform 0.3s;
+        }
+
+        #processedImage:hover {
+            transform: scale(1.01);
+        }
+
+        /* Loading State */
+        .spinner-border {
+            width: 1.2rem;
+            height: 1.2rem;
+            border-width: 0.15em;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/index">
+                <i class="bi bi-camera text-primary me-2"></i>
+                Palm Oil Detector
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/index">
+                            <i class="bi bi-house-door me-1"></i>
+                            Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ticket">
+                            <i class="bi bi-ticket me-1"></i>
+                            Ticket
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/history">
+                            <i class="bi bi-clock-history me-1"></i>
+                            History
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/train">
+                            <i class="bi bi-gear me-1"></i>
+                            Training
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right me-1"></i>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <h1 class="h2 mb-2">Palm Oil Quality Detection</h1>
+                <p class="text-muted">Upload palm oil fruit images for automatic detection and classification. The system will detect, crop, and classify fruits, allowing you to verify results for dataset enhancement.</p>
+            </div>
+        </div>
+
+        <!-- Menu Buttons -->
+        <div class="mb-4 d-flex flex-wrap gap-2">
+            <a id="downloadModelBtn" href="#" class="btn btn-success" style="display:none;">
+                <i class="bi bi-download me-2"></i>
+                Download Model
+            </a>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="uploadSection" class="card">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0">
+                    <i class="bi bi-cloud-upload me-2 text-primary"></i>
+                    Upload Image
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Upload a palm oil fruit image for automatic detection, cropping, and classification. You can verify crop results to build a training dataset.</p>
+            <form id="uploadForm" class="mb-3">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="imageInput" accept="image/*">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            Process Image
+                        </button>
+                    </div>
+                    <div class="form-text">Supported formats: JPG, PNG</div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="mt-4" style="display: none;">
+        <div class="container">
+            <div class="card">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clipboard-check me-2 text-success"></i>
+                            Detection Results
+                        </h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.location.reload()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            New Detection
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Detection Image Section -->
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body p-2 position-relative">
+                                    <div id="imageContainer" class="position-relative bg-light rounded" style="min-height: 400px; max-height: 600px; overflow: hidden;">
+                                        <img id="processedImage" class="position-absolute top-0 start-0 w-100 h-100" alt="Processed Image" style="object-fit: contain;">
+                                        <div class="position-absolute top-50 start-50 translate-middle text-center" id="imagePlaceholder">
+                                            <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+                                            <p class="text-muted mt-2">Detection results will appear here</p>
+                                        </div>
+                                        <!-- Loading spinner -->
+                                        <div id="imageLoading" class="position-absolute top-50 start-50 translate-middle d-none">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="position-absolute bottom-0 end-0 m-3">
+                                        <button class="btn btn-light btn-sm shadow-sm me-2" onclick="toggleFullscreen()">
+                                            <i class="bi bi-arrows-fullscreen"></i>
+                                        </button>
+                                        <button class="btn btn-light btn-sm shadow-sm" onclick="downloadImage()">
+                                            <i class="bi bi-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light py-3 text-center">
+                                    <h6 class="mb-0 fw-bold">Original Image with Detections</h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-graph-up me-2"></i>
+                                        Analysis Summary
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <div class="text-center">
+                                            <div class="h6 mb-2">Total Fruits Detected</div>
+                                            <div class="display-4 mb-0">
+                                                <span id="detectionCount" class="badge bg-primary"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <h6 class="fw-bold mb-3">Classification Results:</h6>
+                                        <ul class="list-group list-group-flush" id="classificationSummary">
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Classifications -->
+                    <div class="mt-5">
+                        <h5 class="mb-4">
+                            <i class="bi bi-grid me-2"></i>
+                            Individual Fruit Classifications
+                        </h5>
+                        <div id="cropResults" class="crop-grid"></div>
+                    </div>
+
+                    <!-- Training Navigation -->
+                    <div class="text-center mt-5">
+                        <button onclick="submitAllClasses()" class="btn btn-success me-3">
+                            <i class="bi bi-save me-2"></i>
+                            Save All Classifications
+                        </button>
+                        <a href="/train" class="btn btn-primary">
+                            <i class="bi bi-gear me-2"></i>
+                            Go to Training Page
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        // Initialize placeholder
+        document.getElementById('imagePlaceholder').classList.remove('d-none');
+
+        function showImageLoading(show) {
+            const loading = document.getElementById('imageLoading');
+            if (show) {
+                loading.classList.remove('d-none');
+            } else {
+                loading.classList.add('d-none');
+            }
+        }
+
+        function toggleFullscreen() {
+            const img = document.getElementById('processedImage');
+            if (!document.fullscreenElement) {
+                if (img.requestFullscreen) {
+                    img.requestFullscreen();
+                } else if (img.webkitRequestFullscreen) {
+                    img.webkitRequestFullscreen();
+                } else if (img.msRequestFullscreen) {
+                    img.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        function downloadImage() {
+            const img = document.getElementById('processedImage');
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = 'palm-oil-detection.jpg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showLoading(show = true) {
+            const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+            if (show) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Processing...
+                `;
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <i class="bi bi-arrow-right-circle me-2"></i>
+                    Process Image
+                `;
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toastHtml = `
+                <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                    <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                                ${message}
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            const toastEl = document.querySelector('.toast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        }
+
+        let originalImageBase64 = ''; // Tambahkan variabel untuk menyimpan gambar asli
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const fileInput = document.getElementById('imageInput');
+
+            if (!fileInput.files.length) {
+                showToast('Please select an image file first', 'danger');
+                return;
+            }
+
+            // Save original image as base64
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onloadend = function() {
+                originalImageBase64 = reader.result;
+            };
+            reader.readAsDataURL(file);
+
+            formData.append('file', file);
+            showLoading(true);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                    return;
+                }
+
+                // Smooth scroll to results
+                document.getElementById('resultsSection').style.display = 'block';
+                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+                
+                // Hide placeholder and display main image with fade effect
+                document.getElementById('imagePlaceholder').classList.add('d-none');
+                const processedImage = document.getElementById('processedImage');
+                
+                // Clear any previous image and reset opacity
+                processedImage.style.opacity = '0';
+                processedImage.removeAttribute('src');
+                
+                // Set the new image source (use detection_image for bounding box result)
+                const imageData = data.detection_image;
+
+                // Set the image source directly as it's already a base64 data URL
+                processedImage.src = imageData;
+                setTimeout(() => {
+                    processedImage.style.transition = 'opacity 0.5s';
+                    processedImage.style.opacity = '1';
+                }, 100);
+                processedImage.onerror = function() {
+                    console.error('Failed to load detection image');
+                    showToast('Failed to load detection image', 'danger');
+                    document.getElementById('imagePlaceholder').classList.remove('d-none');
+                };
+                
+                // Update detection count with animation
+                const detectionCount = document.getElementById('detectionCount');
+                detectionCount.textContent = data.detection_count;
+                detectionCount.classList.add('animate__animated', 'animate__bounceIn');
+                
+                // Update classification summary with colors
+                const summaryList = document.getElementById('classificationSummary');
+                summaryList.innerHTML = '';
+                const colors = {
+                    'ripe': 'success',
+                    'unripe': 'warning',
+                    'rotten': 'dark'
+                };
+                
+                for (const [label, count] of Object.entries(data.classification_summary)) {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    li.innerHTML = `
+                        <span>
+                            <i class="bi bi-circle-fill text-${colors[label] || 'primary'} me-2"></i>
+                            ${label}
+                        </span>
+                        <span class="badge bg-${colors[label] || 'primary'} rounded-pill">${count}</span>
+                    `;
+                    summaryList.appendChild(li);
+                }
+
+                // Display cropped results with animation
+                const cropResults = document.getElementById('cropResults');
+                cropResults.innerHTML = '';
+                data.crops.forEach((crop, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'crop-card position-relative';
+                    card.style.animation = `fadeInUp 0.3s ease-out ${index * 0.1}s forwards`;
+                    
+                    const classButtons = ["ripe", "rotten", "unripe"]
+                        .map(cls => `
+                            <button class="btn btn-sm ${cls === crop.label ? `btn-${colors[cls] || 'primary'}` : 'btn-outline-secondary'} class-button" 
+                                    onclick="verifyClass('${crop.image_data}', '${cls}')"
+                                    type="button">
+                                ${cls}
+                            </button>
+                        `).join('');
+                    
+                    card.innerHTML = `
+                        <img src="${crop.image_data}" class="crop-image" alt="Cropped fruit">
+                        <div class="confidence-badge bg-${colors[crop.label] || 'primary'}">
+                            ${(crop.confidence * 100).toFixed(1)}%
+                        </div>
+                        <div class="text-center mb-2">
+                            <span class="badge bg-${colors[crop.label] || 'primary'} px-3 py-2">
+                                <i class="bi bi-tag me-1"></i>
+                                <span class="current-label">${crop.label}</span>
+                            </span>
+                        </div>
+                        <div class="class-buttons" data-crop-path="${crop.image_data}">
+                            ${classButtons}
+                        </div>
+                    `;
+                    cropResults.appendChild(card);
+                });
+
+                showToast('Image processed successfully!');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred while processing the image', 'danger');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        async function verifyClass(cropPath, verifiedLabel) {
+            try {
+                // Find the card with this crop
+                const cardButtons = document.querySelector(`[data-crop-path="${cropPath}"]`);
+                const card = cardButtons.closest('.crop-card');
+                
+                // Update the badge color and label
+                const badge = card.querySelector('.badge');
+                const labelSpan = badge.querySelector('.current-label');
+                const confidenceBadge = card.querySelector('.confidence-badge');
+                
+                // Remove old color classes and add new one
+                const colors = {
+                    'ripe': 'success',
+                    'unripe': 'warning',
+                    'rotten': 'dark'
+                };
+                
+                ['bg-success', 'bg-warning', 'bg-danger', 'bg-secondary', 'bg-info', 'bg-dark', 'bg-primary'].forEach(cls => {
+                    badge.classList.remove(cls);
+                    confidenceBadge.classList.remove(cls);
+                });
+                
+                badge.classList.add(`bg-${colors[verifiedLabel] || 'primary'}`);
+                confidenceBadge.classList.add(`bg-${colors[verifiedLabel] || 'primary'}`);
+                labelSpan.textContent = verifiedLabel;
+                
+                // Update button states
+                cardButtons.querySelectorAll('.btn').forEach(btn => {
+                    btn.classList.remove('btn-success', 'btn-warning', 'btn-danger', 'btn-secondary', 'btn-info', 'btn-dark', 'btn-primary', 'btn-outline-secondary');
+                    if (btn.textContent.trim() === verifiedLabel) {
+                        btn.classList.add(`btn-${colors[verifiedLabel] || 'primary'}`);
+                    } else {
+                        btn.classList.add('btn-outline-secondary');
+                    }
+                });
+                
+                // Call the verify endpoint
+                const response = await fetch('/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        crop_path: cropPath,
+                        verified_label: verifiedLabel
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`Classification changed to "${verifiedLabel}"`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to change classification', 'danger');
+            }
+        }
+
+        async function submitAllClasses() {
+            try {
+                const processedImage = document.getElementById('processedImage');
+                const cropCards = document.querySelectorAll('.crop-card');
+                
+                // Get original image from our saved base64
+                const originalImageData = originalImageBase64;
+                // Get detection image (which is the current processed image with bounding boxes)
+                const detectionImageData = processedImage.src;
+                
+                // Get all crops with their current classifications
+                const crops = Array.from(cropCards).map(card => ({
+                    image_data: card.querySelector('.class-buttons').dataset.cropPath,
+                    label: card.querySelector('.current-label').textContent
+                }));
+                
+                // Send all data to the backend
+                const response = await fetch('/save_all_classifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        original_image: originalImageData,
+                        detection_image: detectionImageData,
+                        crops: crops
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Successfully saved all classifications!');
+                    // Mark all cards as saved
+                    cropCards.forEach(card => card.classList.add('saved'));
+                } else {
+                    throw new Error(data.error || 'Failed to save classifications');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to save classifications: ' + error.message, 'danger');
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .crop-card.saved {
+            border: 2px solid var(--bs-success);
+            position: relative;
+        }
+        .crop-card.saved::after {
+            content: '✓';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 25px;
+            height: 25px;
+            background: var(--bs-success);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .checkmark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(40, 167, 69, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 30px;
+            animation: checkmarkAppear 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            pointer-events: none;
+        }
+        .checkmark::after {
+            content: '✓';
+        }
+        @keyframes checkmarkAppear {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            70% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+        .btn-success:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .btn-outline-success {
+            pointer-events: none;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Details - Palm Oil Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .crop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .crop-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background: white;
+            transition: transform 0.2s;
+        }
+
+        .crop-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .crop-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: calc(var(--border-radius) - 4px);
+        }
+
+        .classification-badge {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .confidence-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.3s ease-out forwards;
+        }
+
+        .list-group-item {
+            transition: background-color 0.2s;
+        }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .btn-group .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-group .btn i {
+            font-size: 0.75rem;
+        }
+
+        .class-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .class-button {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .class-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .class-button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-lg.shadow {
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3) !important;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-lg.shadow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(40, 167, 69, 0.4) !important;
+        }
+
+        .pending-indicator {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="card">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-camera me-2"></i>Detection Details
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="window.location.reload()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                        </button>
+                        <button onclick="window.location.href='/history'" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back to History
+                        </button>
+                    </div>
+                </div>
+            </div>
+                
+            <!-- Detection Image Section -->
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <!-- Original Image Card -->
+                        <div class="card mb-4 fade-in-up">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-image me-2"></i>Original Image
+                                </span>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="toggleFullscreen('originalImage')">
+                                        <i class="bi bi-arrows-fullscreen"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="downloadImage('originalImage')">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="rotateImage('originalImage')">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body text-center">
+                                <img id="originalImage" class="img-fluid rounded" style="max-height: 400px; object-fit: contain;" alt="Original Image">
+                            </div>
+                        </div>
+
+                        <!-- Detection Results Card -->
+                        <div class="card mb-4 fade-in-up" style="animation-delay: 0.1s;">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-box me-2"></i>Detection Results
+                                </span>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="toggleFullscreen('detectionImage')">
+                                        <i class="bi bi-arrows-fullscreen"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="downloadImage('detectionImage')">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="rotateImage('detectionImage')">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body text-center">
+                                <img id="detectionImage" class="img-fluid rounded" style="max-height: 400px; object-fit: contain;" alt="Detection Results">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <!-- Detection Summary -->
+                        <div class="card mb-4 fade-in-up" style="animation-delay: 0.2s;">
+                            <div class="card-header">
+                                <i class="bi bi-pie-chart me-2"></i>Detection Summary
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Total Detections</span>
+                                        <span id="totalDetections" class="badge bg-primary rounded-pill">0</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Ripe</span>
+                                        <span id="ripeCount" class="badge bg-success rounded-pill">0</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Rotten</span>
+                                        <span id="rottenCount" class="badge bg-dark rounded-pill">0</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Unripe</span>
+                                        <span id="unripeCount" class="badge bg-info rounded-pill">0</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="card fade-in-up" style="animation-delay: 0.3s;">
+                            <div class="card-header">
+                                <i class="bi bi-lightning me-2"></i>Quick Actions
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="downloadAllImages()">
+                                        <i class="bi bi-download me-1"></i>Download All Images
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="showAnalytics()">
+                                        <i class="bi bi-graph-up me-1"></i>View Analytics
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm" onclick="exportReport()">
+                                        <i class="bi bi-file-earmark-text me-1"></i>Export Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Individual Crops Section -->
+                <div class="mt-4 fade-in-up" style="animation-delay: 0.4s;">
+                    <h5 class="mb-3">
+                        <i class="bi bi-grid me-2"></i>Individual Crop Results
+                        <div class="float-end">
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleGridView()">
+                                <i class="bi bi-grid me-1"></i>Toggle View
+                            </button>
+                            <button class="btn btn-sm btn-outline-success ms-1" onclick="downloadAllCrops()">
+                                <i class="bi bi-download me-1"></i>Download All
+                            </button>
+                        </div>
+                    </h5>
+                    <div id="cropGrid" class="crop-grid">
+                        <!-- Crops will be populated here -->
+                    </div>
+                    
+                        <!-- Submit All Validation Section -->
+                        <div class="text-center mt-5">
+                            <button onclick="submitAllValidations()" class="btn btn-lg btn-success px-4 py-2" style="font-weight:600;border-radius:10px;">
+                                <i class="bi bi-save me-2"></i>
+                                Submit All Validation
+                            </button>
+                            <button onclick="clearPendingChanges()" class="btn btn-lg btn-outline-warning px-4 py-2" style="font-weight:600;border-radius:10px;">
+                                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                                Reset Changes
+                            </button>
+                            <small class="text-muted d-block mt-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Make your changes and click "Submit All Validation" to save them permanently
+                            </small>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Color mapping untuk setiap class
+        const colors = {
+            'ripe': 'success',
+            'rotten': 'dark',
+            'unripe': 'primary'
+        };
+
+        // Get ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const imageId = urlParams.get('id');
+        let currentRotation = 0;
+        
+        // Object untuk menyimpan perubahan sementara
+        let pendingChanges = {};
+
+        // Fungsi untuk verify class (hanya update UI, tidak kirim ke backend)
+        function verifyClass(cropPath, verifiedLabel) {
+            try {
+                const cardButtons = document.querySelector(`[data-crop-path="${cropPath}"]`);
+                const card = cardButtons.closest('.crop-card');
+
+                // Extract filename dari cropPath untuk key
+                const filename = cropPath.split('/').pop();
+                
+                // Simpan perubahan sementara
+                pendingChanges[filename] = {
+                    cropPath: cropPath,
+                    verifiedLabel: verifiedLabel,
+                    originalLabel: card.dataset.originalLabel || card.querySelector('.current-label').textContent
+                };
+
+                // Update badge warna + label di UI
+                const badge = card.querySelector('.badge .current-label').parentElement;
+                const labelSpan = badge.querySelector('.current-label');
+                const confidenceBadge = card.querySelector('.confidence-badge');
+
+                // Ubah warna badge + update label
+                badge.classList.remove('bg-warning', 'bg-secondary', 'bg-danger', 'bg-success', 'bg-dark', 'bg-primary');
+                badge.classList.add(`bg-${colors[verifiedLabel] || 'primary'}`);
+                
+                if (confidenceBadge) {
+                    confidenceBadge.classList.remove('bg-warning', 'bg-secondary', 'bg-danger', 'bg-success', 'bg-dark', 'bg-primary');
+                    confidenceBadge.classList.add(`bg-${colors[verifiedLabel] || 'primary'}`);
+                }
+                
+                labelSpan.textContent = verifiedLabel;
+
+                // Update button states
+                cardButtons.querySelectorAll('.btn').forEach(btn => {
+                    // Reset all button classes
+                    btn.classList.remove('btn-warning', 'btn-secondary', 'btn-danger', 'btn-success', 'btn-dark', 'btn-primary');
+                    btn.classList.remove('btn-outline-warning', 'btn-outline-secondary', 'btn-outline-danger', 'btn-outline-success', 'btn-outline-dark', 'btn-outline-primary');
+                    
+                    if (btn.textContent.trim() === verifiedLabel) {
+                        btn.classList.add(`btn-${colors[verifiedLabel] || 'primary'}`);
+                    } else {
+                        btn.classList.add('btn-outline-secondary');
+                    }
+                });
+
+                // Tampilkan indikator bahwa ada perubahan pending
+                if (!card.querySelector('.pending-indicator')) {
+                    const indicator = document.createElement('span');
+                    indicator.className = 'pending-indicator badge bg-warning position-absolute';
+                    indicator.style.cssText = 'top: 5px; left: 5px; font-size: 0.7rem;';
+                    indicator.innerHTML = '<i class="bi bi-clock"></i> Pending';
+                    card.querySelector('.position-relative').appendChild(indicator);
+                }
+
+                // Update counter pending changes
+                updatePendingCounter();
+
+                showToast(`Classification changed to "${verifiedLabel}" (pending)`, 'info');
+            } catch (error) {
+                showToast('Failed to change classification', 'danger');
+                console.error('Error in verifyClass:', error);
+            }
+        }
+
+        // Fungsi untuk update counter pending changes
+        function updatePendingCounter() {
+            const count = Object.keys(pendingChanges).length;
+            let counter = document.getElementById('pending-counter');
+            
+            if (!counter && count > 0) {
+                counter = document.createElement('span');
+                counter.id = 'pending-counter';
+                counter.className = 'badge bg-warning ms-2';
+                const submitBtn = document.querySelector('button[onclick="submitAllValidations()"]');
+                submitBtn.appendChild(counter);
+            }
+            
+            if (counter) {
+                if (count > 0) {
+                    counter.textContent = `${count} pending`;
+                    counter.style.display = 'inline';
+                } else {
+                    counter.style.display = 'none';
+                }
+            }
+        }
+
+        async function loadDetails() {
+            if (!imageId) {
+                showToast('No image ID provided', 'danger');
+                return;
+            }
+            try {
+                const res = await fetch('/get_detection_details', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: imageId })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                displayDetails(data);
+            } catch (error) {
+                showToast('Error loading details: ' + error, 'danger');
+            }
+        }
+
+        function displayDetails(data) {
+            // Set images
+            document.getElementById('originalImage').src = data.original_image;
+            document.getElementById('detectionImage').src = data.detection_image;
+            
+            // Update total detections
+            document.getElementById('totalDetections').textContent = data.total_detections;
+            
+            // Reset all counters
+            const categories = ['ripe', 'rotten', 'unripe'];
+            categories.forEach(category => {
+                document.getElementById(`${category}Count`).textContent = '0';
+            });
+            
+            // Update classification counts
+            for (const [category, count] of Object.entries(data.summary)) {
+                const elementId = `${category.toLowerCase()}Count`;
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = count;
+                }
+            }
+            
+            // Display crops
+            const cropGrid = document.getElementById('cropGrid');
+            cropGrid.innerHTML = '';
+
+            data.crops.forEach((crop, index) => {
+                const card = document.createElement('div');
+                card.className = 'crop-card fade-in-up';
+                card.style.animationDelay = `${0.1 * index}s`;
+                card.dataset.originalLabel = crop.classification; // Simpan label original
+                try {
+                    const fname = (crop.image || '').split('/').pop();
+                    card.dataset.filename = fname;
+                    card.dataset.place = String(crop.place);
+                } catch {}
+                
+                card.innerHTML = `
+                    <div class="position-relative mb-2">
+                        <img src="${crop.image}" class="crop-image" alt="Crop ${crop.place}"
+                             onclick="toggleFullscreen('crop_${crop.place}')">
+                        ${crop.valid_status ? `
+                        <span class="confidence-badge bg-${getClassColor(crop.classification)}">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            Valid
+                        </span>
+                        ` : ''}
+                        <div class="position-absolute bottom-0 start-0 m-2">
+                            <span class="badge bg-secondary">#${crop.place}</span>
+                        </div>
+                        <div class="position-absolute bottom-0 end-0 m-2">
+                            <span class="badge bg-${getClassColor(crop.classification)}">
+                                <span class="current-label">${crop.classification}</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="btn-group w-100 mb-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="toggleFullscreen('crop_${crop.place}')">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="downloadImage('crop_${crop.place}')">
+                            <i class="bi bi-download"></i>
+                        </button>
+                    </div>
+                    <div class="class-buttons" data-crop-path="${crop.image}">
+                        ${["ripe", "rotten", "unripe"]
+                            .map(cls => `
+                                <button class="btn btn-sm ${cls === crop.classification ? `btn-${getClassColor(cls)}` : 'btn-outline-secondary'} class-button" 
+                                        onclick="verifyClass('${crop.image}', '${cls}')"
+                                        type="button">
+                                    ${cls}
+                                </button>
+                            `).join('')}
+                    </div>
+                `;
+                cropGrid.appendChild(card);
+                
+                // Add hidden image element for fullscreen/download
+                const img = document.createElement('img');
+                img.id = `crop_${crop.place}`;
+                img.src = crop.image;
+                img.style.display = 'none';
+                document.body.appendChild(img);
+            });
+        }
+
+        function getClassColor(label) {
+            const colors = {
+                'ripe': 'success',
+                'rotten': 'dark',
+                'unripe': 'primary'
+            };
+            return colors[label] || 'secondary';
+        }
+
+        function toggleFullscreen(imageId) {
+            const img = document.getElementById(imageId);
+            if (!document.fullscreenElement) {
+                if (img.requestFullscreen) {
+                    img.requestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function downloadImage(imageId) {
+            const img = document.getElementById(imageId);
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = `palm-oil-${imageId}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function submitAllValidations() {
+            try {
+                // Build all crop validations (changed or not)
+                const cards = Array.from(document.querySelectorAll('#cropGrid .crop-card'));
+                if (cards.length === 0) {
+                    showToast('No items to submit', 'info');
+                    return;
+                }
+
+                // Create local timestamp in YYYY-MM-DD HH:MM:SS format
+                const now = new Date();
+                const ts = now.getFullYear() + '-' + 
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(now.getDate()).padStart(2, '0') + ' ' + 
+                    String(now.getHours()).padStart(2, '0') + ':' + 
+                    String(now.getMinutes()).padStart(2, '0') + ':' + 
+                    String(now.getSeconds()).padStart(2, '0');
+                const items = cards.map(card => {
+                    const current = (card.querySelector('.current-label')?.textContent || '').trim();
+                    const original = card.dataset.originalLabel || current;
+                    const file_name = card.dataset.filename;
+                    const place = isNaN(parseInt(card.dataset.place)) ? card.dataset.place : parseInt(card.dataset.place);
+                    return {
+                        file_name,
+                        class_result: current,
+                        place,
+                        timestamp: ts,
+                        valid_status: current !== original
+                    };
+                });
+
+                if (!confirm(`Submit ${items.length} validations?`)) return;
+
+                const res = await fetch('/submit_validations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    showToast(data.error || 'Failed to submit validations', 'danger');
+                    return;
+                }
+
+                // Clear pending changes & indicators
+                pendingChanges = {};
+                updatePendingCounter();
+                document.querySelectorAll('.pending-indicator').forEach(el => el.remove());
+
+                showToast(`Submitted ${data.count} validations`, 'success');
+                loadDetails();
+            } catch (error) {
+                console.error('Error in submitAllValidations:', error);
+                showToast('Error submitting validations: ' + error.message, 'danger');
+            }
+        }
+
+        function downloadAllImages() {
+            downloadImage('originalImage');
+            setTimeout(() => downloadImage('detectionImage'), 500);
+            setTimeout(() => downloadAllCrops(), 1000);
+        }
+
+        function showAnalytics() {
+            alert('Analytics feature coming soon!');
+        }
+
+        function exportReport() {
+            alert('Report export feature coming soon!');
+        }
+
+        function showToast(message, type = 'success') {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1055';
+                document.body.appendChild(toastContainer);
+            }
+
+            // Create toast element
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header bg-${type === 'danger' ? 'danger' : type === 'info' ? 'info' : 'success'} text-white">
+                        <i class="bi bi-${type === 'danger' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'check-circle'} me-2"></i>
+                        <strong class="me-auto">${type === 'danger' ? 'Error' : type === 'info' ? 'Info' : 'Success'}</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            // Initialize and show toast
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: 3000
+            });
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', function () {
+                toastElement.remove();
+            });
+        }
+
+        
+
+        async function validateCrop(imageId, place) {
+            try {
+                const response = await fetch('/update_valid_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image_id: imageId,
+                        place: parseInt(place)
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(errorJson.error || 'Server error');
+                    } catch (e) {
+                        throw new Error('Server error: ' + errorText);
+                    }
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Validation successful');
+                    // Reload the details to update the UI
+                    loadDetails();
+                } else {
+                    showToast(data.error || 'Failed to validate', 'error');
+                }
+            } catch (error) {
+                console.error('Validation error:', error);
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Fungsi untuk clear pending changes
+        function clearPendingChanges() {
+            if (Object.keys(pendingChanges).length === 0) {
+                showToast('No pending changes to clear!', 'info');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to reset all pending changes?')) {
+                return;
+            }
+
+            // Clear pending changes object
+            pendingChanges = {};
+
+            // Reload details untuk reset UI ke state original
+            loadDetails();
+
+            // Update counter
+            updatePendingCounter();
+
+            showToast('All pending changes cleared!', 'success');
+        }
+
+        // Load details when page loads
+        loadDetails();
+    </script>
+</body>
+</html>

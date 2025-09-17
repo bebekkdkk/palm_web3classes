@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palm Oil Detection History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --border-radius: 8px;
+        }
+        .card-header {
+            background: white;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+         .container {
+            max-width: 1400px;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            font-size: 1.4rem;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            padding: 0.8rem 1rem !important;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--bs-primary) !important;
+            background: rgba(13, 110, 253, 0.05);
+            border-radius: 6px;
+        }
+
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .history-card {
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .history-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .history-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .history-info {
+            padding: 15px;
+            background: white;
+        }
+
+        .date-picker {
+            margin-bottom: 20px;
+        }
+
+        .modal-content {
+            border-radius: var(--border-radius);
+        }
+
+        .crop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .crop-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background: white;
+        }
+
+        .crop-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-action {
+            margin: 5px;
+            border-radius: var(--border-radius);
+        }
+
+        .classification-badge {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin-right: 5px;
+        }
+
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+        }
+
+        /* Button group styling */
+        .btn-group .btn {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+        }
+
+        .btn-group .btn:first-child {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .btn-group .btn:last-child {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-camera text-primary me-2"></i>
+                Palm Oil Detector
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="bi bi-house-door me-1"></i>
+                            Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ticket">
+                            <i class="bi bi-ticket me-1"></i>
+                            Ticket
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/history">
+                            <i class="bi bi-clock-history me-1"></i>
+                            History
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/train">
+                            <i class="bi bi-gear me-1"></i>
+                            Training
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Date Picker Section -->
+        <div class="card date-picker">
+            <div class="card-body">
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                    <h5 class="card-title mb-0 me-3">Select Date</h5>
+                    <input type="date" id="historyDate" class="form-control me-3" style="max-width:180px;" onchange="loadHistoryByDate()">
+                    <button id="btnFilterValid" class="btn btn-outline-danger btn-sm me-1" onclick="setValidFilter('valid')" style="opacity:0.7;">Close</button>
+                    <button id="btnFilterNotValid" class="btn btn-outline-success btn-sm" onclick="setValidFilter('notvalid')" style="opacity:0.7;">Open</button>
+                    <button id="btnFilterClear" class="btn btn-outline-secondary btn-sm ms-3" onclick="setValidFilter('all')" style="opacity:0.7;">Clear Filter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Grid -->
+        <div class="history-grid" id="historyGrid">
+            <!-- History items will be dynamically populated here -->
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="container-fluid mt-4" id="resultsSection" style="display: none;">
+        <!-- Navigation bar for results -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+            <div class="container">
+                <button class="btn btn-link text-decoration-none" onclick="backToHistory()">
+                    <i class="bi bi-arrow-left me-2"></i>Back to History
+                </button>
+                <div class="ms-auto">
+                    <span class="text-muted">
+                        <i class="bi bi-clock me-1"></i>
+                        <span id="imageTimestamp"></span>
+                    </span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- Main Content -->
+            <div class="row">
+                <!-- Left Column: Original and Detection Images -->
+                <div class="col-lg-8">
+                    <!-- Original Image Card -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="bi bi-image me-2"></i>Original Image
+                            </span>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="toggleFullscreen('originalImage')">
+                                    <i class="bi bi-arrows-fullscreen me-1"></i>Fullscreen
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="downloadImage('originalImage')">
+                                    <i class="bi bi-download me-1"></i>Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body text-center">
+                            <img id="originalImage" class="img-fluid rounded" style="max-height: 500px; object-fit: contain;" alt="Original Image">
+                        </div>
+                    </div>
+
+                    <!-- Detection Results Card -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-box me-2"></i>Detection Results</span>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="toggleFullscreen('detectionImage')">
+                                    <i class="bi bi-arrows-fullscreen me-1"></i>Fullscreen
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="downloadImage('detectionImage')">
+                                    <i class="bi bi-download me-1"></i>Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body text-center">
+                            <img id="detectionImage" class="img-fluid rounded" style="max-height: 500px; object-fit: contain;" alt="Detection Results">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Summary and Stats -->
+                <div class="col-lg-4">
+                    <!-- Classification Summary Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="bi bi-pie-chart me-2"></i>Detection Summary
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Total Detections: <span id="totalDetections" class="badge bg-primary">0</span></h5>
+                            <hr>
+                            <h6 class="mb-2">Classification Breakdown:</h6>
+                            <div id="classificationSummary" class="d-flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Individual Crop Results -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-grid me-2"></i>Individual Crop Results
+                </div>
+                <div class="card-body">
+                    <div id="cropGrid" class="crop-grid">
+                        <!-- Crops will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- History Grid Section -->
+    <div id="historySection">
+        <div class="container mt-4">
+            <!-- History Grid -->
+            <div class="history-grid" id="historyGrid">
+                <!-- History items will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Filter state: 'all', 'valid', 'notvalid'
+        let validFilter = 'all';
+        let lastHistoryItems = [];
+
+        function setValidFilter(filter) {
+            validFilter = filter;
+            updateFilterButtons();
+            displayHistoryItems(lastHistoryItems);
+        }
+
+        function updateFilterButtons() {
+            const btnValid = document.getElementById('btnFilterValid');
+            const btnNotValid = document.getElementById('btnFilterNotValid');
+            const btnClear = document.getElementById('btnFilterClear');
+            if (!btnValid || !btnNotValid || !btnClear) return;
+            if (validFilter === 'valid') {
+                btnValid.classList.add('btn-danger');
+                btnValid.classList.remove('btn-outline-danger');
+                btnValid.style.opacity = 1;
+                btnNotValid.classList.add('btn-outline-success');
+                btnNotValid.classList.remove('btn-success');
+                btnNotValid.style.opacity = 0.7;
+                btnClear.classList.add('btn-outline-secondary');
+                btnClear.classList.remove('btn-secondary');
+                btnClear.style.opacity = 0.7;
+            } else if (validFilter === 'notvalid') {
+                btnNotValid.classList.add('btn-success');
+                btnNotValid.classList.remove('btn-outline-success');
+                btnNotValid.style.opacity = 1;
+                btnValid.classList.add('btn-outline-danger');
+                btnValid.classList.remove('btn-danger');
+                btnValid.style.opacity = 0.7;
+                btnClear.classList.add('btn-outline-secondary');
+                btnClear.classList.remove('btn-secondary');
+                btnClear.style.opacity = 0.7;
+            } else {
+                btnClear.classList.add('btn-secondary');
+                btnClear.classList.remove('btn-outline-secondary');
+                btnClear.style.opacity = 1;
+                btnValid.classList.add('btn-outline-danger');
+                btnValid.classList.remove('btn-danger');
+                btnValid.style.opacity = 0.7;
+                btnNotValid.classList.add('btn-outline-success');
+                btnNotValid.classList.remove('btn-success');
+                btnNotValid.style.opacity = 0.7;
+            }
+        }
+        function loadHistoryByDate() {
+            const date = document.getElementById('historyDate').value;
+            if (!date) return;
+
+            // Show loading state
+            document.getElementById('historyGrid').innerHTML = '<div class="text-center"><div class="spinner-border"></div> Loading...</div>';
+
+            fetch('/get_history_by_date', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ date: date })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                    return;
+                }
+                lastHistoryItems = data.items || [];
+                displayHistoryItems(lastHistoryItems);
+            })
+            .catch(error => {
+                showToast('Error loading history: ' + error, 'danger');
+            });
+        }
+
+        function displayHistoryItems(items) {
+            const grid = document.getElementById('historyGrid');
+            grid.innerHTML = '';
+
+            // Filter items by validFilter ('valid' = Close, 'notvalid' = Open)
+            let filtered = items;
+            if (validFilter === 'valid') {
+                filtered = items.filter(item => String(item.status).toLowerCase() === 'close');
+            } else if (validFilter === 'notvalid') {
+                filtered = items.filter(item => String(item.status).toLowerCase() === 'open');
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="alert alert-info">No records found for this filter/date.</div>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'history-card animate__animated animate__fadeIn';
+                let uniqueCode = item.filename ? item.filename.split('(')[0] : item.id;
+
+                const validStatus = String(item.status).toLowerCase() === 'close';
+                let validBtnClass = validStatus ? 'btn-danger' : 'btn-success';
+                let validBtnText = validStatus ? 'Close' : 'Open';
+                card.innerHTML = `
+                    <div class="position-relative">
+                        <img src="${item.image_path}" class="history-image" alt="Detection Image">
+                        <div class="position-absolute top-0 start-0 m-2" style="z-index:2;">
+                            <button class="btn btn-sm ${validBtnClass}" disabled style="font-size:0.8rem; padding:2px 10px;">${validBtnText}</button>
+                        </div>
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-primary">${item.detection_count} detections</span>
+                        </div>
+                    </div>
+                    <div class="history-info">
+                        <div class="mb-1" style="font-size:0.98em; font-weight:500; color:#333;">${uniqueCode}</div>
+                        <div class="mb-2 text-muted" style="font-size:0.93em;"><i class="bi bi-clock me-1"></i> ${item.timestamp} - ${item.uploader || ''}</div>
+                        <div class="classifications-summary mb-2">
+                            ${generateClassificationBadges(item.classifications)}
+                        </div>
+                        <div class="btn-group w-100" role="group">
+                            ${String(item.status).toLowerCase() === 'close' ? `
+                                <button class="btn btn-primary btn-sm" disabled>
+                                    <i class=\"bi bi-zoom-in me-1\"></i>View Details
+                                </button>
+                            ` : `
+                                <a href="/validate?id=${item.id}" class="btn btn-primary btn-sm">
+                                    <i class=\"bi bi-zoom-in me-1\"></i>View Details
+                                </a>
+                            `}
+                            ${item.can_edit ? `
+                            <button class="btn btn-outline-secondary btn-sm" onclick="openSettings('${item.id}', '${item.status}')">
+                                <i class=\"bi bi-gear me-1\"></i>Settings
+                            </button>
+                            ` : `
+                            <button class="btn btn-outline-secondary btn-sm" onclick="notifyNotOwner()">
+                                <i class=\"bi bi-gear me-1\"></i>Settings
+                            </button>
+                            `}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            updateFilterButtons();
+        }
+
+        function generateClassificationBadges(classifications) {
+            return Object.entries(classifications)
+                .map(([label, count]) => `
+                    <span class="badge bg-${getClassColor(label)} me-1">
+                        ${label}: ${count}
+                    </span>
+                `).join('');
+        }
+
+        function getClassColor(label) {
+            const colors = {
+                'ripe': 'success',
+                'rotten': 'dark',
+                'unripe': 'primary'
+            };
+            return colors[label] || 'secondary';
+        }
+
+        function showDetails(id) {
+            // Show loading state and switch to details view
+            document.getElementById('historySection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('cropGrid').innerHTML = '<div class="text-center"><div class="spinner-border"></div> Loading...</div>';
+            window.scrollTo(0, 0);
+
+            fetch('/get_detection_details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                    return;
+                }
+                displayDetectionDetails(data);
+            })
+            .catch(error => {
+                showToast('Error loading details: ' + error, 'danger');
+            });
+        }
+
+        function displayDetectionDetails(data) {
+            // Set original image
+            document.getElementById('modalOriginalImage').src = data.original_image;
+
+            // Display crops
+            const cropGrid = document.getElementById('modalCropGrid');
+            cropGrid.innerHTML = '';
+
+            // Sort crops by place number
+            const sortedCrops = data.crops.sort((a, b) => {
+                const aNum = parseInt(a.image.match(/\((\d+)\)/)?.[1] || 0);
+                const bNum = parseInt(b.image.match(/\((\d+)\)/)?.[1] || 0);
+                return aNum - bNum;
+            });
+
+            sortedCrops.forEach(crop => {
+                const cropCard = document.createElement('div');
+                cropCard.className = 'crop-card animate__animated animate__fadeIn';
+                cropCard.innerHTML = `
+                    <div class="position-relative">
+                        <img src="${crop.image}" class="crop-image" alt="Crop ${crop.classification}" onclick="toggleFullscreen('${crop.image}')">
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-${getClassColor(crop.classification)}">${crop.classification}</span>
+                        </div>
+                    </div>
+                    <div class="crop-actions mt-2 text-center">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="toggleFullscreen('${crop.image}')">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="downloadImage('${crop.image}')">
+                            <i class="bi bi-download"></i>
+                        </button>
+                    </div>
+                `;
+                cropGrid.appendChild(cropCard);
+            });
+        }
+
+        function toggleFullscreen(imageId) {
+            const img = document.getElementById(imageId);
+            if (!document.fullscreenElement) {
+                if (img.requestFullscreen) {
+                    img.requestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function downloadImage(imageId) {
+            const img = document.getElementById(imageId);
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = 'palm-oil-detection.jpg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showToast(message, type = 'success') {
+            // You can implement a toast notification system here
+            alert(message);
+        }
+
+        function showDetails(id) {
+            // Hide history section and show results section
+            document.getElementById('historySection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+
+            fetch('/get_detection_details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                    return;
+                }
+                displayDetectionDetails(data);
+            })
+            .catch(error => {
+                showToast('Error loading details: ' + error, 'danger');
+                backToHistory();
+            });
+        }
+
+        function displayDetectionDetails(data) {
+            // Set images
+            document.getElementById('originalImage').src = data.original_image;
+            document.getElementById('detectionImage').src = data.detection_image;
+            
+            // Set timestamp
+            document.getElementById('imageTimestamp').textContent = data.timestamp;
+            
+            // Update total detections
+            document.getElementById('totalDetections').textContent = data.total_detections;
+            
+            // Update classification summary
+            const summaryDiv = document.getElementById('classificationSummary');
+            summaryDiv.innerHTML = generateClassificationBadges(data.summary);
+            
+            // Display crops
+            const cropGrid = document.getElementById('cropGrid');
+            cropGrid.innerHTML = '';
+
+            data.crops.forEach(crop => {
+                const cropCard = document.createElement('div');
+                cropCard.className = 'crop-card animate__animated animate__fadeIn';
+                cropCard.innerHTML = `
+                    <div class="position-relative">
+                        <img src="${crop.image}" class="crop-image" alt="Crop ${crop.classification}" onclick="toggleFullscreen('crop_${crop.place}')">
+                        <div class="position-absolute top-0 start-0 m-2">
+                            <span class="badge bg-secondary">#${crop.place}</span>
+                        </div>
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-${getClassColor(crop.classification)}">${crop.classification}</span>
+                        </div>
+                    </div>
+                    <div class="crop-actions mt-2 text-center">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="toggleFullscreen('crop_${crop.place}')">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="downloadImage('crop_${crop.place}')">
+                            <i class="bi bi-download"></i>
+                        </button>
+                    </div>
+                `;
+                cropGrid.appendChild(cropCard);
+                
+                // Add hidden image element for fullscreen/download
+                const img = document.createElement('img');
+                img.id = `crop_${crop.place}`;
+                img.src = crop.image;
+                img.style.display = 'none';
+                document.body.appendChild(img);
+            });
+        }
+
+        function backToHistory() {
+            // Switch back to history view with animation
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('historySection').style.display = 'block';
+            // Clean up
+            document.querySelectorAll('img[id^="crop_"]').forEach(img => img.remove());
+            // Update URL without reloading
+            window.scrollTo(0, 0);
+        }
+
+        function toggleFullscreen(imageId) {
+            const img = document.getElementById(imageId);
+            if (!document.fullscreenElement) {
+                if (img.requestFullscreen) {
+                    img.requestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function downloadImage(imageId) {
+            const img = document.getElementById(imageId);
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = `palm-oil-${imageId}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showToast(message, type = 'success') {
+            alert(message); // You can implement a better toast system
+        }
+
+        function notifyNotOwner() {
+            showToast('Tidak bisa mengubah, hanya uploader yang boleh.', 'danger');
+        }
+
+        async function openSettings(id, currentStatus) {
+            // simple toggle open/close
+            const base_name = id; // id is base_name in API
+            const nextStatus = currentStatus === 'close' ? 'open' : 'close';
+            if (!confirm(`Set status to ${nextStatus.toUpperCase()}?`)) return;
+            try {
+                const res = await fetch('/set_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ base_name, status: nextStatus })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    showToast(data.error || 'Failed to update status', 'danger');
+                    return;
+                }
+                showToast('Status updated');
+                // reload list to reflect changes
+                loadHistoryByDate();
+            } catch (e) {
+                showToast('Server error: ' + e.message, 'danger');
+            }
+        }
+
+        // Set default date to today and load data
+        document.getElementById('historyDate').valueAsDate = new Date();
+        loadHistoryByDate();
+    </script>
+</body>
+</html>
