@@ -14,7 +14,7 @@
                 document.getElementById('imagePlaceholder').classList.add('d-none');
                 showImageLoading(true);
 
-                const response = await fetch('/upload', {
+                const response = await fetch('/setmutu/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -251,7 +251,7 @@
 
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/index">
+            <a class="navbar-brand fw-bold" href="/setmutu/index">
                 <i class="bi bi-camera text-primary me-2"></i>
                 Palm Oil Detector
             </a>
@@ -261,19 +261,19 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/index">
+                        <a class="nav-link active" href="/setmutu/index">
                             <i class="bi bi-house-door me-1"></i>
                             Home
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/ticket">
+                        <a class="nav-link" href="/setmutu/ticket">
                             <i class="bi bi-ticket me-1"></i>
                             Ticket
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/history">
+                        <a class="nav-link" href="/setmutu/history">
                             <i class="bi bi-clock-history me-1"></i>
                             History
                         </a>
@@ -281,13 +281,13 @@
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="/train">
+                        <a class="nav-link" href="/setmutu/train">
                             <i class="bi bi-gear me-1"></i>
                             Training
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">
+                        <a class="nav-link" href="/setmutu/logout">
                             <i class="bi bi-box-arrow-right me-1"></i>
                             Logout
                         </a>
@@ -430,7 +430,7 @@
                             <i class="bi bi-save me-2"></i>
                             Save All Classifications
                         </button>
-                        <a href="/train" class="btn btn-primary">
+                        <a href="/setmutu/train" class="btn btn-primary">
                             <i class="bi bi-gear me-2"></i>
                             Go to Training Page
                         </a>
@@ -547,7 +547,7 @@
             showLoading(true);
 
             try {
-                const response = await fetch('/upload', {
+                const response = await fetch('/setmutu/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -695,7 +695,7 @@
                 });
                 
                 // Call the verify endpoint
-                const response = await fetch('/verify', {
+                const response = await fetch('/setmutu/verify', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -732,7 +732,7 @@
                 }));
                 
                 // Send all data to the backend
-                const response = await fetch('/save_all_classifications', {
+                const response = await fetch('/setmutu/save_all_classifications', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

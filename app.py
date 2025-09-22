@@ -18,6 +18,7 @@ from userAuth_hendler import UserAuthHandler
 # Inisialisasi Flask & Folder
 # =============================
 app = Flask(__name__)
+app.config['Application_ROOT']='setmutu'
 app.secret_key = 'your-secret-key-here'  # Replace with a secure secret key
 
 # Timezone configuration (default to Asia/Jakarta). Override with env APP_TZ.
@@ -90,8 +91,8 @@ cls_labels = ["ripe", "rotten", "unripe"]
 # Routes
 # =============================
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
+@app.route('/setmutu/', methods=['GET', 'POST'])
+def login():
     # Jika user sudah login, redirect ke /index
     if 'username' in session:
         return redirect(url_for('dashboard'))
@@ -111,13 +112,13 @@ def index():
     
     return render_template('login.html')
 
-@app.route('/index')
+@app.route('/setmutu/index')
 def dashboard():
     if 'username' not in session:
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
     return render_template('index.html')
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/setmutu/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -125,19 +126,18 @@ def register():
         group = request.form.get('group', 'user')  # Default to 'user' if not specified
         
         if auth_handler.register_user(username, password, group):
-            return redirect(url_for('index'))
+            return redirect(url_for('login'))
         else:
             return render_template('register.html', error="Registration failed. Username might already exist.")
-    
     return render_template('register.html')
 
-@app.route('/logout')
+@app.route('/setmutu/logout')
 def logout():
     session.pop('username', None)
     session.pop('group', None)
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
 
-@app.route('/update_valid_status', methods=['POST'])
+@app.route('/setmutu/update_valid_status', methods=['POST'])
 def update_valid_status():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -169,7 +169,7 @@ def update_valid_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/set_status', methods=['POST'])
+@app.route('/setmutu/set_status', methods=['POST'])
 def set_status():
     """Set status open/close for all entries of a base image; only uploader can change."""
     if 'username' not in session:
@@ -193,7 +193,7 @@ def set_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/submit_validations', methods=['POST'])
+@app.route('/setmutu/submit_validations', methods=['POST'])
 def submit_validations():
     """Accept a list of validations from validate.html and append to validate.txt.
     Each item includes: file_name, group, class_result, place, username, timestamp, valid_status (bool)."""
@@ -212,7 +212,7 @@ def submit_validations():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/verify', methods=['POST'])
+@app.route('/setmutu/verify', methods=['POST'])
 def verify_classification():
     """Route untuk verify/mengubah klasifikasi crop"""
     if 'username' not in session:
@@ -516,7 +516,7 @@ def filter_overlapping_detections_with_trunk_validation(detections, width, heigh
     # Hanya return buah saja, batang tidak diikutkan ke output akhir
     return validated_fruits
 
-def predict_with_tflite_buah_only(image, score_threshold=0.35):
+def predict_with_tflite_buah_only(image, score_threshold=0.25):
     input_shape = det_input_details[0]['shape']
     img_resized = image.resize((input_shape[1], input_shape[2]))
     img_array = np.array(img_resized)

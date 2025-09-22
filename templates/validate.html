@@ -166,6 +166,14 @@
                         <button onclick="window.location.href='/history'" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-arrow-left me-1"></i>Back to History
                         </button>
+                        <script>
+                        // Update Back to History button to use /setmutu/history
+                        document.addEventListener('DOMContentLoaded', function() {
+                            var btn = document.querySelector("button[onclick^='window.location.href='/history']");
+                            if (btn) btn.setAttribute('onclick', "window.location.href='/setmutu/history'");
+                        });
+                        </script>
+                        </button>
                     </div>
                 </div>
             </div>
