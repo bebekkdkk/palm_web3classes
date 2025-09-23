@@ -163,13 +163,13 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="window.location.reload()">
                             <i class="bi bi-arrow-clockwise me-1"></i>Refresh
                         </button>
-                        <button onclick="window.location.href='/history'" class="btn btn-outline-secondary btn-sm">
+                        <button onclick="window.location.href='/setmutu/history'" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-arrow-left me-1"></i>Back to History
                         </button>
                         <script>
                         // Update Back to History button to use /setmutu/history
                         document.addEventListener('DOMContentLoaded', function() {
-                            var btn = document.querySelector("button[onclick^='window.location.href='/history']");
+                            var btn = document.querySelector("button[onclick^='window.location.href='/setmutu/history']");
                             if (btn) btn.setAttribute('onclick', "window.location.href='/setmutu/history'");
                         });
                         </script>

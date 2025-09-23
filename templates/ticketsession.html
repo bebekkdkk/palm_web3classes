@@ -444,7 +444,7 @@
         async function validateClass(place, newClass) {
             try {
                 // Build crop image path to send to server
-                const cropPath = `/static/uploads/${imageId}(${place}).jpg`;
+                const cropPath = `setmutu/static/uploads/${imageId}(${place}).jpg`;
                 const res = await fetch('/setmutu/verify', {
                     method: 'POST',
                     headers: {
