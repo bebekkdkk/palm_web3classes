@@ -1091,7 +1091,7 @@ def get_validate_history_by_date():
             result_items.append({
                 'id': key,
                 'filename': f"{gi['base_name']}(-).jpg",
-                'image_path': f"setmutu/static/uploads/{gi['base_name']}(-).jpg",
+                'image_path': f"/setmutu/static/uploads/{gi['base_name']}(-).jpg",
                 'timestamp': time_part,
                 'detection_count': len(entries),
                 'classifications': classifications,
@@ -1143,7 +1143,7 @@ def get_validate_history_detail():
                 continue
             items.append({
                 'file_name': fname,
-                'image_path': f"setmutu/static/uploads/{fname}",
+                'image_path': f"/setmutu/static/uploads/{fname}",
                 'class_result': e.get('class_result', 'Unknown'),
                 'valid_status': bool(e.get('valid_status', False)),
                 'place': e.get('place')
@@ -1166,7 +1166,7 @@ def get_validate_history_detail():
             summary[cls_name] = summary.get(cls_name, 0) + 1
 
         return jsonify({
-            'base_image': f"setmutu/static/uploads/{base_name}(-).jpg",
+            'base_image': f"/setmutu/static/uploads/{base_name}(-).jpg",
             'timestamp': batch_ts,
             'username_yang_mengubah': username_change,
             'items': items,
@@ -1176,7 +1176,7 @@ def get_validate_history_detail():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/getistory_by_date', methods=['POST'])
+@app.route('/get_history_by_date', methods=['POST'])
 def get_history_by_date():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -1239,7 +1239,7 @@ def get_history_by_date():
                     original_images.append({
                         'id': base_name,
                         'filename': filename,
-                        'image_path': f"setmutu/static/uploads/{filename}",
+                        'image_path': f"/setmutu/static/uploads/{filename}",
                         'timestamp': formatted_time,
                         'detection_count': detection_count,
                         'classifications': classifications,
@@ -1275,12 +1275,12 @@ def get_history_by_date():
                     
                     if entry['place'] == '-':
                         # Original image
-                        date_items[base_name]['image_path'] = f"setmutu/static/uploads/{filename}"
+                        date_items[base_name]['image_path'] = f"/setmutu/static/uploads/{filename}"
                     elif entry['place'] > 0:
                         # Count detections
                         date_items[base_name]['detection_count'] += 1
                         date_items[base_name]['crops'].append({
-                            'image': f"setmutu/static/uploads/{filename}",
+                            'image': f"/setmutu/static/uploads/{filename}",
                             'classification': entry['class_result'],
                             'confidence': 100  # Add actual confidence if available
                         })
@@ -1357,7 +1357,7 @@ def get_detection_details():
 
         for entry in entries:
             filename = entry['file_name']
-            image_path = f"setmutu/static/uploads/{filename}"
+            image_path = f"/setmutu/static/uploads/{filename}"
 
             if entry['place'] == '-':
                 details['original_image'] = image_path
