@@ -361,7 +361,7 @@
             // Show loading state
             document.getElementById('historyGrid').innerHTML = '<div class="text-center"><div class="spinner-border"></div> Loading...</div>';
 
-            fetch('/get_validate_history_by_date', {
+            fetch('/setmutu/get_validate_history_by_date', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -472,7 +472,7 @@
             document.getElementById('cropGrid').innerHTML = '<div class="text-center"><div class="spinner-border"></div> Loading...</div>';
             window.scrollTo(0, 0);
 
-            fetch('/get_detection_details', {
+            fetch('/setmutu/get_detection_details', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -563,7 +563,7 @@
             document.getElementById('historySection').style.display = 'none';
             document.getElementById('resultsSection').style.display = 'block';
 
-            fetch('/get_detection_details', {
+            fetch('/setmutu/get_detection_details', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

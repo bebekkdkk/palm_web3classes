@@ -295,7 +295,7 @@
                 return;
             }
             try {
-                const res = await fetch('/get_detection_details', {
+                const res = await fetch('/setmutu/get_detection_details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: imageId })
@@ -445,7 +445,7 @@
             try {
                 // Build crop image path to send to server
                 const cropPath = `/static/uploads/${imageId}(${place}).jpg`;
-                const res = await fetch('/verify', {
+                const res = await fetch('/setmutu/verify', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -475,7 +475,7 @@
 
         async function downloadAllCrops() {
             try {
-                const res = await fetch('/get_detection_details', {
+                const res = await fetch('/setmutu/get_detection_details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: imageId })
@@ -516,7 +516,7 @@
         async function submitAllValidations() {
             try {
                 // Load current details from server
-                const res = await fetch('/get_detection_details', {
+                const res = await fetch('/setmutu/get_detection_details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: imageId })
@@ -535,7 +535,7 @@
                 // Validate each crop
                 for (const crop of cropEntries) {
                     try {
-                        const validateResponse = await fetch('/update_valid_status', {
+                        const validateResponse = await fetch('/setmutu/update_valid_status', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -580,7 +580,7 @@
 
         async function validateCrop(imageId, place) {
             try {
-                const response = await fetch('/update_valid_status', {
+                const response = await fetch('/setmutu/update_valid_status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

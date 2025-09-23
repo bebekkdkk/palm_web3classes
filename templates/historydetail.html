@@ -291,7 +291,7 @@
                 return;
             }
             try {
-                const resp = await fetch('/get_validate_history_detail', {
+                const resp = await fetch('/setmutu/get_validate_history_detail', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: groupId })
