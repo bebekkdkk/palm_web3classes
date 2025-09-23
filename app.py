@@ -14,12 +14,12 @@ import tensorflow as tf
 from validation_handler import ValidationHandler
 from userAuth_hendler import UserAuthHandler
 
-# =============================
-# Inisialisasi Flask & Folder
-# =============================
+from flask import Blueprint
 app = Flask(__name__)
-app.config['Application_ROOT']='setmutu'
+app.config['route'] = 'setmutu'
 app.secret_key = 'your-secret-key-here'  # Replace with a secure secret key
+# Blueprint untuk semua route utama
+main_bp = Blueprint('main', __name__)
 
 # Timezone configuration (default to Asia/Jakarta). Override with env APP_TZ.
 APP_TZ = os.environ.get('APP_TZ', 'Asia/Jakarta')
@@ -91,7 +91,7 @@ cls_labels = ["ripe", "rotten", "unripe"]
 # Routes
 # =============================
 
-@app.route('/setmutu/', methods=['GET', 'POST'])
+@main_bp.route('/', methods=['GET', 'POST'])
 def login():
     # Jika user sudah login, redirect ke /index
     if 'username' in session:
@@ -112,13 +112,13 @@ def login():
     
     return render_template('login.html')
 
-@app.route('/setmutu/index')
+@main_bp.route('/index')
 def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
     return render_template('index.html')
 
-@app.route('/setmutu/register', methods=['GET', 'POST'])
+@main_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -131,13 +131,13 @@ def register():
             return render_template('register.html', error="Registration failed. Username might already exist.")
     return render_template('register.html')
 
-@app.route('/setmutu/logout')
+@main_bp.route('/logout')
 def logout():
     session.pop('username', None)
     session.pop('group', None)
     return redirect(url_for('login'))
 
-@app.route('/setmutu/update_valid_status', methods=['POST'])
+@main_bp.route('/update_valid_status', methods=['POST'])
 def update_valid_status():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -169,7 +169,7 @@ def update_valid_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/setmutu/set_status', methods=['POST'])
+@main_bp.route('/set_status', methods=['POST'])
 def set_status():
     """Set status open/close for all entries of a base image; only uploader can change."""
     if 'username' not in session:
@@ -193,7 +193,7 @@ def set_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/setmutu/submit_validations', methods=['POST'])
+@main_bp.route('/submit_validations', methods=['POST'])
 def submit_validations():
     """Accept a list of validations from validate.html and append to validate.txt.
     Each item includes: file_name, group, class_result, place, username, timestamp, valid_status (bool)."""
@@ -212,7 +212,7 @@ def submit_validations():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/setmutu/verify', methods=['POST'])
+@main_bp.route('/verify', methods=['POST'])
 def verify_classification():
     """Route untuk verify/mengubah klasifikasi crop"""
     if 'username' not in session:
@@ -669,7 +669,7 @@ def classify_crops(cropped_images):
         })
     return results
 
-@app.route('/train')
+@main_bp.route('/train')
 def train():
     """Redirect to Colab for training"""
     if 'username' not in session:
@@ -677,7 +677,7 @@ def train():
     return render_template('train.html')
 
 
-@app.route('/upload', methods=['POST'])
+@main_bp.route('/upload', methods=['POST'])
 def upload_file():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -753,7 +753,7 @@ def upload_file():
 
 
 # Route for saving individual crops
-@app.route('/save_crop', methods=['POST'])
+@main_bp.route('/save_crop', methods=['POST'])
 def save_crop_endpoint():
     try:
         data = request.get_json()
@@ -802,7 +802,7 @@ def save_crop_endpoint():
         })
 
 # Route for saving all classifications
-@app.route('/save_all_classifications', methods=['POST'])
+@main_bp.route('/save_all_classifications', methods=['POST'])
 def save_all_classifications():
     try:
         data = request.get_json()
@@ -916,7 +916,7 @@ def save_all_classifications():
         }), 500
 
 # Route for checking database status
-@app.route('/database_status')
+@main_bp.route('/database_status')
 def database_status():
     database = validation_handler.load_database()
     class_counts = Counter(_normalize_label(entry['class_result']) for entry in database if isinstance(entry['place'], (int, float)) and entry['place'] > 0)
@@ -928,21 +928,21 @@ def database_status():
     })
 
 # History Routes - Separate from main functionality
-@app.route('/history')
+@main_bp.route('/history')
 def history():
     """Route for history page"""
     if 'username' not in session:
         return redirect(url_for('index'))
     return render_template('history.html')
 
-@app.route('/ticket')
+@main_bp.route('/ticket')
 def ticket():
     """Route for ticket page"""
     if 'username' not in session:
         return redirect(url_for('index'))
     return render_template('ticket.html')
 
-@app.route('/get_validate_history_by_date', methods=['POST'])
+@main_bp.route('/get_validate_history_by_date', methods=['POST'])
 def get_validate_history_by_date():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -1034,7 +1034,7 @@ def get_validate_history_by_date():
         print(f"Error in get_validate_history_by_date: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/get_validate_history_detail', methods=['POST'])
+@main_bp.route('/get_validate_history_detail', methods=['POST'])
 def get_validate_history_detail():
     """Return details for a grouped validate history id built as base|username|timestamp"""
     if 'username' not in session:
@@ -1100,7 +1100,7 @@ def get_validate_history_detail():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/get_history_by_date', methods=['POST'])
+@main_bp.route('/get_history_by_date', methods=['POST'])
 def get_history_by_date():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -1307,6 +1307,10 @@ def get_detection_details():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Register blueprint dengan prefix '/setmutu'
+app.register_blueprint(main_bp, url_prefix='/setmutu')
 
 if __name__ == '__main__':
     app.run(debug=True)
