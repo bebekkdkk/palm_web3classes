@@ -691,29 +691,104 @@ def upload_file():
         image_stream = file.read()
         image = Image.open(io.BytesIO(image_stream)).convert('RGB')
         width, height = image.size
-        # 1. Deteksi buah saja
-        detected_objects, _ = predict_with_tflite_buah_only(image)
-        # 2. NMS
-        detected_objects = non_max_suppression(detected_objects, iou_threshold=0.6)
-        # 3. Filtering overlap titik (hapus jika >4 titik overlap, proses berulang)
-        detected_objects = filter_overlapping_detections(detected_objects, width, height)
-        # 4. Counting hasil akhir
-        detection_count = len(detected_objects)
-        # 5. Visualisasi bounding box dan nomor
+        # 1. Deteksi buah & batang
+        input_shape = det_input_details[0]['shape']
+        img_resized = image.resize((input_shape[1], input_shape[2]))
+        img_array = np.array(img_resized)
+        input_dtype = det_input_details[0]['dtype']
+        if input_dtype == np.uint8:
+            img_array = img_array.astype(np.uint8)
+        else:
+            img_array = img_array.astype(np.float32) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+        det_interpreter.set_tensor(det_input_details[0]['index'], img_array)
+        det_interpreter.invoke()
+        output_boxes = det_interpreter.get_tensor(det_output_details[0]['index'])[0]
+        output_classes = det_interpreter.get_tensor(det_output_details[1]['index'])[0]
+        output_scores = det_interpreter.get_tensor(det_output_details[2]['index'])[0]
+        num_detections = int(det_interpreter.get_tensor(det_output_details[3]['index'])[0])
+        detections = []
+        for i in range(num_detections):
+            score = float(output_scores[i])
+            class_id = int(output_classes[i])
+            class_name = det_class_names[class_id] if class_id < len(det_class_names) else f"Unknown_{class_id}"
+            box = output_boxes[i]
+            # Threshold sesuai ObjectDetectionPy
+            if class_name == 'buah' and score >= 0.3618514:
+                detections.append({'box': box, 'class_id': class_id, 'score': score, 'class_name': class_name})
+            elif class_name == 'batang' and score >= 0.3618514:
+                detections.append({'box': box, 'class_id': class_id, 'score': score, 'class_name': class_name})
+
+        # 2. NMS khusus untuk buah
+        def iou_special(box1, box2):
+            ymin1, xmin1, ymax1, xmax1 = box1
+            ymin2, xmin2, ymax2, xmax2 = box2
+            x1 = max(xmin1, xmin2)
+            y1 = max(ymin1, ymin2)
+            x2 = min(xmax1, xmax2)
+            y2 = min(ymax1, ymax2)
+            inter_w = max(0.0, x2 - x1)
+            inter_h = max(0.0, y2 - y1)
+            intersection = inter_w * inter_h
+            area1 = max(0.0, (xmax1 - xmin1) * (ymax1 - ymin1))
+            if area1 <= 0:
+                return 0.0
+            return (intersection / area1) if intersection > 0 else 0.0
+
+        def nms_bunch(dets, threshold=0.5):
+            dets = [d for d in dets if d['class_name'] == 'buah']
+            dets = sorted(dets, key=lambda d: d['score'], reverse=True)
+            n = len(dets)
+            keep = [True] * n
+            for i in range(n):
+                if not keep[i]:
+                    continue
+                box1 = dets[i]['box']
+                score1 = dets[i]['score']
+                for j in range(n):
+                    if i == j or not keep[j]:
+                        continue
+                    box2 = dets[j]['box']
+                    score2 = dets[j]['score']
+                    iou = iou_special(box1, box2)
+                    if iou >= threshold:
+                        if score1 >= score2:
+                            keep[j] = False
+                        else:
+                            keep[i] = False
+                            break
+            return [dets[i] for i in range(n) if keep[i]]
+
+        # 3. Rule-based counting (clustering) jika submission > 20
+        submission = int(request.form.get('submission', 25)) if request.form.get('submission') else 25
+        bunch_detections = [d for d in detections if d['class_name'] == 'buah']
+        trunk_detections = [d for d in detections if d['class_name'] == 'batang']
+        if submission > 20:
+            bunch_nms = nms_bunch(bunch_detections)
+            # Dummy clustering: totalBunch = min(submission, len(bunch_nms))
+            # (implementasi clustering penuh bisa ditambah jika diperlukan)
+            final_bunch = min(submission, len(bunch_nms))
+            detection_count = final_bunch
+            filtered_detections = bunch_nms[:final_bunch]
+        else:
+            filtered_detections = bunch_detections
+            detection_count = len(filtered_detections)
+
+        # 4. Visualisasi bounding box dan nomor
         detection_image = image.copy()
-        detection_image = draw_bounding_boxes_with_numbers(detection_image, detected_objects)
-        # 6. Cropping dan klasifikasi (jika ingin, tetap gunakan crop_detections & classify_crops)
-        cropped_images = crop_detections(image, detected_objects)
+        detection_image = draw_bounding_boxes_with_numbers(detection_image, filtered_detections)
+
+        # 5. Cropping dan klasifikasi
+        cropped_images = crop_detections(image, filtered_detections)
         results = classify_crops(cropped_images)
-        # 7. Prepare results without saving
         classification_summary = Counter()
         crops_info = []
-        
+
         # Store original image in memory
         original_buffer = io.BytesIO()
         image.save(original_buffer, format='JPEG')
         original_img_str = base64.b64encode(original_buffer.getvalue()).decode()
-        
+
         # Store detection image in memory
         detection_buffer = io.BytesIO()
         detection_image.save(detection_buffer, format='JPEG')
