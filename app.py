@@ -91,8 +91,8 @@ cls_labels = ["ripe", "rotten", "unripe"]
 # Routes
 # =============================
 
-@app.route('/setmutu/', methods=['GET', 'POST'])
-def login():
+@app.route('/', methods=['GET', 'POST'])
+def index():
     # Jika user sudah login, redirect ke /index
     if 'username' in session:
         return redirect(url_for('dashboard'))
@@ -112,13 +112,13 @@ def login():
     
     return render_template('login.html')
 
-@app.route('/setmutu/index')
+@app.route('/index')
 def dashboard():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('index'))
     return render_template('index.html')
 
-@app.route('/setmutu/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -126,18 +126,19 @@ def register():
         group = request.form.get('group', 'user')  # Default to 'user' if not specified
         
         if auth_handler.register_user(username, password, group):
-            return redirect(url_for('login'))
+            return redirect(url_for('index'))
         else:
             return render_template('register.html', error="Registration failed. Username might already exist.")
+    
     return render_template('register.html')
 
-@app.route('/setmutu/logout')
+@app.route('/logout')
 def logout():
     session.pop('username', None)
     session.pop('group', None)
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
-@app.route('/setmutu/update_valid_status', methods=['POST'])
+@app.route('/update_valid_status', methods=['POST'])
 def update_valid_status():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -169,7 +170,7 @@ def update_valid_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/setmutu/set_status', methods=['POST'])
+@app.route('/set_status', methods=['POST'])
 def set_status():
     """Set status open/close for all entries of a base image; only uploader can change."""
     if 'username' not in session:
@@ -193,7 +194,7 @@ def set_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/setmutu/submit_validations', methods=['POST'])
+@app.route('/submit_validations', methods=['POST'])
 def submit_validations():
     """Accept a list of validations from validate.html and append to validate.txt.
     Each item includes: file_name, group, class_result, place, username, timestamp, valid_status (bool)."""
@@ -212,7 +213,7 @@ def submit_validations():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/setmutu/verify', methods=['POST'])
+@app.route('/verify', methods=['POST'])
 def verify_classification():
     """Route untuk verify/mengubah klasifikasi crop"""
     if 'username' not in session:
@@ -516,7 +517,7 @@ def filter_overlapping_detections_with_trunk_validation(detections, width, heigh
     # Hanya return buah saja, batang tidak diikutkan ke output akhir
     return validated_fruits
 
-def predict_with_tflite_buah_only(image, score_threshold=0.25):
+def predict_with_tflite_buah_only(image, score_threshold=0.35):
     input_shape = det_input_details[0]['shape']
     img_resized = image.resize((input_shape[1], input_shape[2]))
     img_array = np.array(img_resized)
