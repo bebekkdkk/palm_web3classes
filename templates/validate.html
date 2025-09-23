@@ -150,13 +150,6 @@
             100% { opacity: 1; }
         }
     </style>
-    <script>
-        // Injected by Flask context_processor
-        const APP_ROOT = "{{ APP_ROOT }}/";
-        function apiUrl(path) {
-            return APP_ROOT.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
-        }
-    </script>
 </head>
 <body class="bg-light">
     <div class="container py-4">
@@ -433,7 +426,7 @@
                 return;
             }
             try {
-                const res = await fetch(apiUrl('get_detection_details'), {
+                const res = await fetch('/setmutu/get_detection_details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: imageId })
@@ -598,7 +591,7 @@
 
                 if (!confirm(`Submit ${items.length} validations?`)) return;
 
-                const res = await fetch(apiUrl('submit_validations'), {
+                const res = await fetch('/setmutu/submit_validations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ items })
@@ -682,7 +675,7 @@
 
         async function validateCrop(imageId, place) {
             try {
-                const response = await fetch(apiUrl('update_valid_status'), {
+                const response = await fetch('/setmutu/update_valid_status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

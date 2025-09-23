@@ -14,19 +14,14 @@ import tensorflow as tf
 from validation_handler import ValidationHandler
 from userAuth_hendler import UserAuthHandler
 
-from flask import Blueprint
-
+# =============================
+# Inisialisasi Flask & Folder
+# =============================
 app = Flask(__name__)
-app.config['Application_ROOT'] = 'setmutu'
+app.config['Application_ROOT']='setmutu'
 app.secret_key = 'your-secret-key-here'  # Replace with a secure secret key
-# Blueprint untuk semua route utama
-main_bp = Blueprint('main', __name__)
 
-@app.context_processor
-def inject_app_root():
-    return dict(APP_ROOT=app.config.get('Application_ROOT', '/'))
-
-
+# Timezone configuration (default to Asia/Jakarta). Override with env APP_TZ.
 APP_TZ = os.environ.get('APP_TZ', 'Asia/Jakarta')
 
 def now_local():
@@ -96,8 +91,8 @@ cls_labels = ["ripe", "rotten", "unripe"]
 # Routes
 # =============================
 
-@main_bp.route('/', methods=['GET', 'POST'])
-def login():
+@app.route('/', methods=['GET', 'POST'])
+def index():
     # Jika user sudah login, redirect ke /index
     if 'username' in session:
         return redirect(url_for('dashboard'))
@@ -117,13 +112,13 @@ def login():
     
     return render_template('login.html')
 
-@main_bp.route('/index')
+@app.route('/index')
 def dashboard():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('index'))
     return render_template('index.html')
 
-@main_bp.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -131,18 +126,19 @@ def register():
         group = request.form.get('group', 'user')  # Default to 'user' if not specified
         
         if auth_handler.register_user(username, password, group):
-            return redirect(url_for('login'))
+            return redirect(url_for('index'))
         else:
             return render_template('register.html', error="Registration failed. Username might already exist.")
+    
     return render_template('register.html')
 
-@main_bp.route('/logout')
+@app.route('/logout')
 def logout():
     session.pop('username', None)
     session.pop('group', None)
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
-@main_bp.route('/update_valid_status', methods=['POST'])
+@app.route('/update_valid_status', methods=['POST'])
 def update_valid_status():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -174,7 +170,7 @@ def update_valid_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@main_bp.route('/set_status', methods=['POST'])
+@app.route('/set_status', methods=['POST'])
 def set_status():
     """Set status open/close for all entries of a base image; only uploader can change."""
     if 'username' not in session:
@@ -198,7 +194,7 @@ def set_status():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@main_bp.route('/submit_validations', methods=['POST'])
+@app.route('/submit_validations', methods=['POST'])
 def submit_validations():
     """Accept a list of validations from validate.html and append to validate.txt.
     Each item includes: file_name, group, class_result, place, username, timestamp, valid_status (bool)."""
@@ -217,7 +213,7 @@ def submit_validations():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@main_bp.route('/verify', methods=['POST'])
+@app.route('/verify', methods=['POST'])
 def verify_classification():
     """Route untuk verify/mengubah klasifikasi crop"""
     if 'username' not in session:
@@ -521,7 +517,7 @@ def filter_overlapping_detections_with_trunk_validation(detections, width, heigh
     # Hanya return buah saja, batang tidak diikutkan ke output akhir
     return validated_fruits
 
-def predict_with_tflite_buah_only(image, score_threshold=0.25):
+def predict_with_tflite_buah_only(image, score_threshold=0.35):
     input_shape = det_input_details[0]['shape']
     img_resized = image.resize((input_shape[1], input_shape[2]))
     img_array = np.array(img_resized)
@@ -674,7 +670,7 @@ def classify_crops(cropped_images):
         })
     return results
 
-@main_bp.route('/train')
+@app.route('/train')
 def train():
     """Redirect to Colab for training"""
     if 'username' not in session:
@@ -682,7 +678,7 @@ def train():
     return render_template('train.html')
 
 
-@main_bp.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['POST'])
 def upload_file():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -758,7 +754,7 @@ def upload_file():
 
 
 # Route for saving individual crops
-@main_bp.route('/save_crop', methods=['POST'])
+@app.route('/save_crop', methods=['POST'])
 def save_crop_endpoint():
     try:
         data = request.get_json()
@@ -807,7 +803,7 @@ def save_crop_endpoint():
         })
 
 # Route for saving all classifications
-@main_bp.route('/save_all_classifications', methods=['POST'])
+@app.route('/save_all_classifications', methods=['POST'])
 def save_all_classifications():
     try:
         data = request.get_json()
@@ -921,7 +917,7 @@ def save_all_classifications():
         }), 500
 
 # Route for checking database status
-@main_bp.route('/database_status')
+@app.route('/database_status')
 def database_status():
     database = validation_handler.load_database()
     class_counts = Counter(_normalize_label(entry['class_result']) for entry in database if isinstance(entry['place'], (int, float)) and entry['place'] > 0)
@@ -933,21 +929,21 @@ def database_status():
     })
 
 # History Routes - Separate from main functionality
-@main_bp.route('/history')
+@app.route('/history')
 def history():
     """Route for history page"""
     if 'username' not in session:
         return redirect(url_for('index'))
     return render_template('history.html')
 
-@main_bp.route('/ticket')
+@app.route('/ticket')
 def ticket():
     """Route for ticket page"""
     if 'username' not in session:
         return redirect(url_for('index'))
     return render_template('ticket.html')
 
-@main_bp.route('/get_validate_history_by_date', methods=['POST'])
+@app.route('/get_validate_history_by_date', methods=['POST'])
 def get_validate_history_by_date():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -1020,7 +1016,7 @@ def get_validate_history_by_date():
             result_items.append({
                 'id': key,
                 'filename': f"{gi['base_name']}(-).jpg",
-                'image_path': f"/static/uploads/{gi['base_name']}(-).jpg",
+                'image_path': f"setmutu/static/uploads/{gi['base_name']}(-).jpg",
                 'timestamp': time_part,
                 'detection_count': len(entries),
                 'classifications': classifications,
@@ -1039,7 +1035,7 @@ def get_validate_history_by_date():
         print(f"Error in get_validate_history_by_date: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-@main_bp.route('/get_validate_history_detail', methods=['POST'])
+@app.route('/get_validate_history_detail', methods=['POST'])
 def get_validate_history_detail():
     """Return details for a grouped validate history id built as base|username|timestamp"""
     if 'username' not in session:
@@ -1072,7 +1068,7 @@ def get_validate_history_detail():
                 continue
             items.append({
                 'file_name': fname,
-                'image_path': f"/static/uploads/{fname}",
+                'image_path': f"setmutu/static/uploads/{fname}",
                 'class_result': e.get('class_result', 'Unknown'),
                 'valid_status': bool(e.get('valid_status', False)),
                 'place': e.get('place')
@@ -1095,7 +1091,7 @@ def get_validate_history_detail():
             summary[cls_name] = summary.get(cls_name, 0) + 1
 
         return jsonify({
-            'base_image': f"/static/uploads/{base_name}(-).jpg",
+            'base_image': f"setmutu/static/uploads/{base_name}(-).jpg",
             'timestamp': batch_ts,
             'username_yang_mengubah': username_change,
             'items': items,
@@ -1105,7 +1101,7 @@ def get_validate_history_detail():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@main_bp.route('/get_history_by_date', methods=['POST'])
+@app.route('/getistory_by_date', methods=['POST'])
 def get_history_by_date():
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -1168,7 +1164,7 @@ def get_history_by_date():
                     original_images.append({
                         'id': base_name,
                         'filename': filename,
-                        'image_path': f"/static/uploads/{filename}",
+                        'image_path': f"setmutu/static/uploads/{filename}",
                         'timestamp': formatted_time,
                         'detection_count': detection_count,
                         'classifications': classifications,
@@ -1204,12 +1200,12 @@ def get_history_by_date():
                     
                     if entry['place'] == '-':
                         # Original image
-                        date_items[base_name]['image_path'] = f"/static/uploads/{filename}"
+                        date_items[base_name]['image_path'] = f"setmutu/static/uploads/{filename}"
                     elif entry['place'] > 0:
                         # Count detections
                         date_items[base_name]['detection_count'] += 1
                         date_items[base_name]['crops'].append({
-                            'image': f"/static/uploads/{filename}",
+                            'image': f"setmutu/static/uploads/{filename}",
                             'classification': entry['class_result'],
                             'confidence': 100  # Add actual confidence if available
                         })
@@ -1286,7 +1282,7 @@ def get_detection_details():
 
         for entry in entries:
             filename = entry['file_name']
-            image_path = f"/static/uploads/{filename}"
+            image_path = f"setmutu/static/uploads/{filename}"
 
             if entry['place'] == '-':
                 details['original_image'] = image_path
@@ -1312,10 +1308,6 @@ def get_detection_details():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-# Register blueprint dengan prefix '/setmutu'
-app.register_blueprint(main_bp, url_prefix='/setmutu')
 
 if __name__ == '__main__':
     app.run(debug=True)

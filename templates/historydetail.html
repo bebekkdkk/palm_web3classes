@@ -128,13 +128,6 @@
             border-color: var(--primary-color);
         }
     </style>
-    <script>
-        // Injected by Flask context_processor
-        const APP_ROOT = "{{ APP_ROOT }}/";
-        function apiUrl(path) {
-            return APP_ROOT.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
-        }
-    </script>
 </head>
 <body class="bg-light">
     <div class="container py-4">
@@ -298,7 +291,7 @@
                 return;
             }
             try {
-                const resp = await fetch(apiUrl('get_validate_history_detail'), {
+                const resp = await fetch('/setmutu/get_validate_history_detail', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: groupId })
