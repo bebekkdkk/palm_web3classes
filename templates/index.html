@@ -246,6 +246,13 @@
             border-width: 0.15em;
         }
     </style>
+    <script>
+        // Injected by Flask context_processor
+        const APP_ROOT = "{{ APP_ROOT }}/";
+        function apiUrl(path) {
+            return APP_ROOT.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+        }
+    </script>
 </head>
 <body>
 

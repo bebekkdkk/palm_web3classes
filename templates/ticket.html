@@ -154,6 +154,13 @@
             border-bottom-left-radius: 0;
         }
     </style>
+    <script>
+        // Injected by Flask context_processor
+        const APP_ROOT = "{{ APP_ROOT }}/";
+        function apiUrl(path) {
+            return APP_ROOT.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+        }
+    </script>
 </head>
 <body>
     <!-- Navbar -->
@@ -377,7 +384,7 @@
             // Show loading state
             document.getElementById('historyGrid').innerHTML = '<div class="text-center"><div class="spinner-border"></div> Loading...</div>';
 
-            fetch('/get_history_by_date', {
+            fetch(apiUrl('get_history_by_date'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -491,7 +498,7 @@
             document.getElementById('cropGrid').innerHTML = '<div class="text-center"><div class="spinner-border"></div> Loading...</div>';
             window.scrollTo(0, 0);
 
-            fetch('/get_detection_details', {
+            fetch(apiUrl('get_detection_details'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -582,7 +589,7 @@
             document.getElementById('historySection').style.display = 'none';
             document.getElementById('resultsSection').style.display = 'block';
 
-            fetch('/get_detection_details', {
+            fetch(apiUrl('get_detection_details'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -702,7 +709,7 @@
             const nextStatus = currentStatus === 'close' ? 'open' : 'close';
             if (!confirm(`Set status to ${nextStatus.toUpperCase()}?`)) return;
             try {
-                const res = await fetch('/set_status', {
+                const res = await fetch(apiUrl('set_status'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ base_name, status: nextStatus })

@@ -128,6 +128,13 @@
             border-color: var(--primary-color);
         }
     </style>
+    <script>
+        // Injected by Flask context_processor
+        const APP_ROOT = "{{ APP_ROOT }}/";
+        function apiUrl(path) {
+            return APP_ROOT.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+        }
+    </script>
 </head>
 <body class="bg-light">
     <div class="container py-4">
@@ -295,7 +302,7 @@
                 return;
             }
             try {
-                const res = await fetch('/get_detection_details', {
+                const res = await fetch(apiUrl('get_detection_details'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: imageId })
@@ -445,7 +452,7 @@
             try {
                 // Build crop image path to send to server
                 const cropPath = `/static/uploads/${imageId}(${place}).jpg`;
-                const res = await fetch('/verify', {
+                const res = await fetch(apiUrl('verify'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -475,7 +482,7 @@
 
         async function downloadAllCrops() {
             try {
-                const res = await fetch('/get_detection_details', {
+                const res = await fetch(apiUrl('get_detection_details'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: imageId })
@@ -516,7 +523,7 @@
         async function submitAllValidations() {
             try {
                 // Load current details from server
-                const res = await fetch('/get_detection_details', {
+                const res = await fetch(apiUrl('get_detection_details'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: imageId })
@@ -535,7 +542,7 @@
                 // Validate each crop
                 for (const crop of cropEntries) {
                     try {
-                        const validateResponse = await fetch('/update_valid_status', {
+                        const validateResponse = await fetch(apiUrl('update_valid_status'), {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -580,7 +587,7 @@
 
         async function validateCrop(imageId, place) {
             try {
-                const response = await fetch('/update_valid_status', {
+                const response = await fetch(apiUrl('update_valid_status'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

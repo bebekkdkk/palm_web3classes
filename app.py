@@ -15,13 +15,18 @@ from validation_handler import ValidationHandler
 from userAuth_hendler import UserAuthHandler
 
 from flask import Blueprint
+
 app = Flask(__name__)
-app.config['route'] = 'setmutu'
+app.config['Application_ROOT'] = 'setmutu'
 app.secret_key = 'your-secret-key-here'  # Replace with a secure secret key
 # Blueprint untuk semua route utama
 main_bp = Blueprint('main', __name__)
 
-# Timezone configuration (default to Asia/Jakarta). Override with env APP_TZ.
+@app.context_processor
+def inject_app_root():
+    return dict(APP_ROOT=app.config.get('Application_ROOT', '/'))
+
+
 APP_TZ = os.environ.get('APP_TZ', 'Asia/Jakarta')
 
 def now_local():
