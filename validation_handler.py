@@ -22,7 +22,8 @@ class ValidationHandler:
         """Load detection results from ticket table and map to legacy shape used by app."""
         try:
             query = f"""
-                SELECT id, file_name, group_id, class_result, status, place, username, created_at, updated_at
+                SELECT id, file_name, group_id, class_result, status, place, username, created_at, updated_at,
+                       total_process_time, detection_time, classification_time
                 FROM {self.ticket_table}
                 ORDER BY created_at DESC
             """
@@ -53,7 +54,10 @@ class ValidationHandler:
                         'status': result['status'],
                         'place': place_val,
                         'username': result['username'],
-                        'created_at': result['created_at'].strftime('%Y-%m-%d %H:%M:%S') if result.get('created_at') else None
+                        'created_at': result['created_at'].strftime('%Y-%m-%d %H:%M:%S') if result.get('created_at') else None,
+                        'total_process_time': result.get('total_process_time', 0.0),
+                        'detection_time': result.get('detection_time', 0.0),
+                        'classification_time': result.get('classification_time', 0.0)
                     })
                 return normalized
             
@@ -71,8 +75,9 @@ class ValidationHandler:
                 if isinstance(item, dict):
                     query = f"""
                         INSERT INTO {self.ticket_table}
-                        (file_name, group_id, class_result, status, place, username, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        (file_name, group_id, class_result, status, place, username, created_at, updated_at, 
+                         total_process_time, detection_time, classification_time)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
                     
                     # Convert timestamp string to datetime if needed
@@ -92,7 +97,10 @@ class ValidationHandler:
                         item.get('place'),
                         item.get('username'),
                         created_at,
-                        updated_at
+                        updated_at,
+                        item.get('total_process_time', 0.0),  # Total waktu dari awal sampai selesai
+                        item.get('detection_time', 0.0),     # Waktu untuk proses deteksi
+                        item.get('classification_time', 0.0) # Waktu untuk proses klasifikasi
                     )
                     
                     self.db.execute_query(query, params)
@@ -103,24 +111,84 @@ class ValidationHandler:
             print(f"Error saving to database: {str(e)}")
             return False
 
-    def add_detection_result(self, file_name, group, class_result, status, place, username):
-        """Add a single detection result to ticket table."""
+    def add_detection_result(self, file_name, group, class_result, status, place, username, 
+                           total_process_time=0.0, detection_time=0.0, classification_time=0.0):
+        """Add a single detection result to ticket table with timing information."""
         try:
             query = f"""
                 INSERT INTO {self.ticket_table}
-                (file_name, group_id, class_result, status, place, username, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                (file_name, group_id, class_result, status, place, username, created_at, updated_at,
+                 total_process_time, detection_time, classification_time)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             ts = now_local()
             # Store place as text to support '-'
             place_db = place if isinstance(place, str) else str(place)
-            params = (file_name, group, class_result, status, place_db, username, ts, ts)
+            params = (file_name, group, class_result, status, place_db, username, ts, ts,
+                     total_process_time, detection_time, classification_time)
             self.db.execute_query(query, params)
             return True
             
         except Exception as e:
             print(f"Error adding detection result: {str(e)}")
             return False
+
+    def add_timing_info(self, ticket_id, total_process_time=0.0, detection_time=0.0, classification_time=0.0):
+        """Update timing information for an existing ticket record."""
+        try:
+            query = f"""
+                UPDATE {self.ticket_table}
+                SET total_process_time = %s, detection_time = %s, classification_time = %s, updated_at = %s
+                WHERE id = %s
+            """
+            params = (total_process_time, detection_time, classification_time, now_local(), ticket_id)
+            self.db.execute_query(query, params)
+            return True
+            
+        except Exception as e:
+            print(f"Error updating timing info: {str(e)}")
+            return False
+
+    def get_timing_statistics(self, group_id=None, date_filter=None):
+        """Get timing statistics for performance analysis."""
+        try:
+            base_query = f"""
+                SELECT 
+                    AVG(total_process_time) as avg_total_time,
+                    AVG(detection_time) as avg_detection_time,
+                    AVG(classification_time) as avg_classification_time,
+                    MIN(total_process_time) as min_total_time,
+                    MAX(total_process_time) as max_total_time,
+                    COUNT(*) as total_records
+                FROM {self.ticket_table}
+                WHERE total_process_time > 0
+            """
+            
+            params = []
+            if group_id:
+                base_query += " AND group_id = %s"
+                params.append(group_id)
+            
+            if date_filter:
+                base_query += " AND DATE(created_at) = %s"
+                params.append(date_filter)
+            
+            result = self.db.execute_query(base_query, params, fetchone=True)
+            
+            if result:
+                return {
+                    'avg_total_time': float(result.get('avg_total_time', 0) or 0),
+                    'avg_detection_time': float(result.get('avg_detection_time', 0) or 0),
+                    'avg_classification_time': float(result.get('avg_classification_time', 0) or 0),
+                    'min_total_time': float(result.get('min_total_time', 0) or 0),
+                    'max_total_time': float(result.get('max_total_time', 0) or 0),
+                    'total_records': int(result.get('total_records', 0) or 0)
+                }
+            return None
+            
+        except Exception as e:
+            print(f"Error getting timing statistics: {str(e)}")
+            return None
 
     def update_valid_status(self, image_id, place):
         """Toggle status open/close for a specific crop in ticket table.
@@ -286,6 +354,164 @@ class ValidationHandler:
         except Exception as e:
             print(f"Error in save_validations: {str(e)}")
             return False, str(e)
+
+    def get_monthly_ticket_data(self, year, month, group_id):
+        """Get all ticket data for a specific month and year for a group"""
+        try:
+            # Create date range for the month
+            start_date = f"{year}-{month:02d}-01"
+            if month == 12:
+                end_date = f"{year + 1}-01-01"
+            else:
+                end_date = f"{year}-{month + 1:02d}-01"
+            
+            query = f"""
+                SELECT id, file_name, group_id, class_result, status, place, username, created_at, updated_at,
+                       total_process_time, detection_time, classification_time
+                FROM {self.ticket_table}
+                WHERE group_id = %s 
+                AND created_at >= %s 
+                AND created_at < %s
+                ORDER BY created_at DESC
+            """
+            
+            params = (group_id, start_date, end_date)
+            results = self.db.execute_query(query, params, fetch=True)
+            
+            if results:
+                normalized = []
+                for result in results:
+                    raw_place = result.get('place')
+                    place_val = raw_place
+                    # Normalize place: '-' stays '-', numeric strings -> int, 0 stays 0
+                    if isinstance(raw_place, str):
+                        p = raw_place.strip()
+                        if p == '-':
+                            place_val = '-'
+                        else:
+                            try:
+                                place_val = int(p)
+                            except Exception:
+                                place_val = p
+                    elif isinstance(raw_place, (int, float)):
+                        place_val = int(raw_place)
+                    
+                    normalized.append({
+                        'id': result['id'],
+                        'file_name': result['file_name'],
+                        'group': result['group_id'],
+                        'class_result': result['class_result'],
+                        'status': result['status'],
+                        'place': place_val,
+                        'username': result['username'],
+                        'timestamp': result['created_at'].strftime('%Y-%m-%d %H:%M:%S') if result['created_at'] else None,
+                        'uploader': result['username'],  # Add alias for compatibility
+                        'filename': result['file_name'],  # Add alias for compatibility
+                        'total_process_time': float(result['total_process_time']) if result['total_process_time'] else 0.0,
+                        'detection_time': float(result['detection_time']) if result['detection_time'] else 0.0,
+                        'classification_time': float(result['classification_time']) if result['classification_time'] else 0.0
+                    })
+                
+                return normalized
+            
+            return []
+            
+        except Exception as e:
+            print(f"Error getting monthly ticket data: {str(e)}")
+            return []
+
+    def get_yearly_ticket_data(self, year, group_id):
+        """Get all ticket data for a specific year and group"""
+        try:
+            start_date = f"{year}-01-01"
+            end_date = f"{year + 1}-01-01"
+            
+            query = f"""
+                SELECT id, file_name, group_id, class_result, status, place, username, created_at, updated_at,
+                       total_process_time, detection_time, classification_time
+                FROM {self.ticket_table}
+                WHERE group_id = %s 
+                AND created_at >= %s 
+                AND created_at < %s
+                ORDER BY created_at DESC
+            """
+            
+            params = (group_id, start_date, end_date)
+            results = self.db.execute_query(query, params, fetch=True)
+            
+            if results:
+                normalized = []
+                for result in results:
+                    raw_place = result.get('place')
+                    place_val = raw_place
+                    # Normalize place: '-' stays '-', numeric strings -> int, 0 stays 0
+                    if isinstance(raw_place, str):
+                        p = raw_place.strip()
+                        if p == '-':
+                            place_val = '-'
+                        else:
+                            try:
+                                place_val = int(p)
+                            except Exception:
+                                place_val = p
+                    elif isinstance(raw_place, (int, float)):
+                        place_val = int(raw_place)
+                    
+                    normalized.append({
+                        'id': result['id'],
+                        'filename': result['file_name'],
+                        'file_name': result['file_name'],
+                        'group': result['group_id'],
+                        'class_result': result['class_result'],
+                        'status': result['status'],
+                        'place': place_val,
+                        'uploader': result['username'],
+                        'username': result['username'],
+                        'timestamp': result['created_at'].strftime('%Y-%m-%d %H:%M:%S') if result['created_at'] else None,
+                        'created_at': result['created_at'].strftime('%Y-%m-%d %H:%M:%S') if result['created_at'] else None,
+                        'updated_at': result['updated_at'].strftime('%Y-%m-%d %H:%M:%S') if result['updated_at'] else None,
+                        'total_process_time': float(result['total_process_time']) if result['total_process_time'] else 0.0,
+                        'detection_time': float(result['detection_time']) if result['detection_time'] else 0.0,
+                        'classification_time': float(result['classification_time']) if result['classification_time'] else 0.0
+                    })
+                
+                return normalized
+            
+            return []
+            
+        except Exception as e:
+            print(f"Error getting yearly ticket data: {str(e)}")
+            return []
+
+    def get_monthly_ticket_count(self, year, month, group_id):
+        """Get ticket count for a specific month and year for a group"""
+        try:
+            # Create date range for the month
+            start_date = f"{year}-{month:02d}-01"
+            if month == 12:
+                end_date = f"{year + 1}-01-01"
+            else:
+                end_date = f"{year}-{month + 1:02d}-01"
+            
+            query = f"""
+                SELECT COUNT(DISTINCT substring(file_name from 1 for 16)) as count
+                FROM {self.ticket_table}
+                WHERE group_id = %s 
+                AND created_at >= %s 
+                AND created_at < %s
+            """
+            
+            params = (group_id, start_date, end_date)
+            results = self.db.execute_query(query, params, fetch=True)
+            
+            if results and len(results) > 0:
+                return results[0]['count']
+            
+            return 0
+            
+        except Exception as e:
+            print(f"Error getting monthly ticket count: {str(e)}")
+            return 0
 
     def load_validations(self):
         """Load all validation records from database"""

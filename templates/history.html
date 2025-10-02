@@ -190,9 +190,62 @@
                 <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
                     <h5 class="card-title mb-0 me-3">Select Date</h5>
                     <input type="date" id="historyDate" class="form-control me-3" style="max-width:180px;" onchange="loadHistoryByDate()">
-                    <button id="btnFilterValid" class="btn btn-outline-success btn-sm me-1" onclick="setValidFilter('valid')" style="opacity:0.7;">Valid</button>
-                    <button id="btnFilterNotValid" class="btn btn-outline-danger btn-sm" onclick="setValidFilter('notvalid')" style="opacity:0.7;">Need Validation</button>
+                    <button id="btnFilterValid" class="btn btn-outline-success btn-sm me-1" onclick="setValidFilter('valid')" style="opacity:0.7;">Complete Response</button>
+                    <button id="btnFilterNotValid" class="btn btn-outline-danger btn-sm" onclick="setValidFilter('notvalid')" style="opacity:0.7;">Need More Response</button>
                     <button id="btnFilterClear" class="btn btn-outline-secondary btn-sm ms-3" onclick="setValidFilter('all')" style="opacity:0.7;">Clear Filter</button>
+                    <button class="btn btn-outline-primary btn-sm ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#resultTable" aria-expanded="false" aria-controls="resultTable">
+                        <i class="bi bi-table me-1"></i>Result
+                    </button>
+                </div>
+                
+                <!-- Collapsible Result Table -->
+                <div class="collapse mt-3" id="resultTable">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Unique Code</th>
+                                    <th>Timestamp</th>
+                                    <th>Validated By</th>
+                                    <th>Total Detections</th>
+                                    <th>Ripe</th>
+                                    <th>Unripe</th>
+                                    <th>Rotten</th>
+                                    <th>Response Count</th>
+                                    <th>Unchanged Count</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultTableBody">
+                                <!-- Table rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Response Track Record Table -->
+                    <div class="mt-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-list-check me-2"></i>Response Track Record
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Unique Code</th>
+                                        <th>Total Responses</th>
+                                        <th>Responders</th>
+                                        <th>Response Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trackRecordTableBody">
+                                    <!-- Track record rows will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -332,7 +385,7 @@
                 btnClear.classList.add('btn-outline-secondary');
                 btnClear.classList.remove('btn-secondary');
                 btnClear.style.opacity = 0.7;
-            } else if (validFilter === 'need validation') {
+            } else if (validFilter === 'need response') {
                 btnNotValid.classList.add('btn-danger');
                 btnNotValid.classList.remove('btn-outline-danger');
                 btnNotValid.style.opacity = 1;
@@ -372,6 +425,9 @@
             .then(data => {
                 if (data.error) {
                     showToast(data.error, 'danger');
+                    // Clear tables on error
+                    document.getElementById('resultTableBody').innerHTML = '<tr><td colspan="12" class="text-center">Error loading data</td></tr>';
+                    document.getElementById('trackRecordTableBody').innerHTML = '<tr><td colspan="5" class="text-center">Error loading data</td></tr>';
                     return;
                 }
                 lastHistoryItems = data.items || [];
@@ -379,6 +435,9 @@
             })
             .catch(error => {
                 showToast('Error loading history: ' + error, 'danger');
+                // Clear tables on error
+                document.getElementById('resultTableBody').innerHTML = '<tr><td colspan="12" class="text-center">Error loading data</td></tr>';
+                document.getElementById('trackRecordTableBody').innerHTML = '<tr><td colspan="5" class="text-center">Error loading data</td></tr>';
             });
         }
 
@@ -389,17 +448,24 @@
             // Filter items by validFilter
             let filtered = items;
             if (validFilter === 'valid') {
-                // Show items where all validations are correct (status='close' means all validated)
+                // Show items where all responses are complete (status='close' means all responded)
                 filtered = items.filter(item => item.status === 'close');
             } else if (validFilter === 'notvalid') {
-                // Show items where some validations are incorrect (status='open' means needs validation)
+                // Show items where some responses are needed (status='open' means needs response)
                 filtered = items.filter(item => item.status === 'open');
             }
 
             if (filtered.length === 0) {
                 grid.innerHTML = '<div class="alert alert-info">No records found for this filter/date.</div>';
+                // Clear both tables when no data
+                document.getElementById('resultTableBody').innerHTML = '<tr><td colspan="12" class="text-center">No records found for this filter/date.</td></tr>';
+                document.getElementById('trackRecordTableBody').innerHTML = '<tr><td colspan="5" class="text-center">No records found for this filter/date.</td></tr>';
                 return;
             }
+
+            // Populate table
+            populateResultTable(filtered);
+            populateTrackRecordTable(filtered);
 
             filtered.forEach(item => {
                 const card = document.createElement('div');
@@ -409,12 +475,12 @@
                 // Use the status from validate.txt logic
                 let validStatus = item.status === 'close'; // close = all validated correctly
                 let validBtnClass = validStatus ? 'btn-success' : 'btn-warning';
-                let validBtnText = validStatus ? 'All Validated' : 'Needs Validation';
+                let validBtnText = validStatus ? 'All Response' : 'Needs Response';
                 
                 // Show validation counts
                 let validationInfo = '';
                 if (item.valid_count !== undefined && item.invalid_count !== undefined) {
-                    validationInfo = `<small class="text-muted d-block">Valid: ${item.valid_count} | Invalid: ${item.invalid_count}</small>`;
+                    validationInfo = `<small class="text-muted d-block">Response: ${item.valid_count} | Unchanged: ${item.invalid_count}</small>`;
                 }
                 
                 card.innerHTML = `
@@ -424,14 +490,14 @@
                             <button class="btn btn-sm ${validBtnClass}" disabled style="font-size:0.8rem; padding:2px 10px;">${validBtnText}</button>
                         </div>
                         <div class="position-absolute top-0 end-0 m-2">
-                            <span class="badge bg-primary">${item.detection_count} validations</span>
+                            <span class="badge bg-primary">${item.detection_count} responses</span>
                         </div>
                     </div>
                     <div class="history-info">
                         <div class="mb-1" style="font-size:0.98em; font-weight:500; color:#333;">${uniqueCode}</div>
                         <div class="mb-2 text-muted" style="font-size:0.93em;">
                             <i class="bi bi-clock me-1"></i>${item.timestamp}
-                            <br><i class="bi bi-person me-1"></i>Validated by: ${item.uploader}
+                            <br><i class="bi bi-person me-1"></i>Response by: ${item.uploader}
                         </div>
                         ${validationInfo}
                         <div class="classifications-summary mb-2">
@@ -445,6 +511,154 @@
                 grid.appendChild(card);
             });
             updateFilterButtons();
+        }
+
+        function populateResultTable(items) {
+            const tableBody = document.getElementById('resultTableBody');
+            tableBody.innerHTML = '';
+
+            items.forEach((item, index) => {
+                const uniqueCode = item.filename ? item.filename.split('(')[0] : item.id;
+                const statusBadge = item.status === 'close' 
+                    ? '<span class="badge bg-success">All Response</span>' 
+                    : '<span class="badge bg-warning">Needs Response</span>';
+                
+                // Get classification counts
+                const ripeCount = item.classifications['ripe'] || 0;
+                const unripeCount = item.classifications['unripe'] || 0;
+                const rottenCount = item.classifications['rotten'] || 0;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong>${uniqueCode}</strong></td>
+                    <td><small>${item.timestamp}</small></td>
+                    <td>${item.uploader}</td>
+                    <td><span class="badge bg-primary">${item.detection_count}</span></td>
+                    <td><span class="badge bg-success">${ripeCount}</span></td>
+                    <td><span class="badge bg-primary">${unripeCount}</span></td>
+                    <td><span class="badge bg-dark">${rottenCount}</span></td>
+                    <td><span class="badge bg-info">${item.valid_count || 0}</span></td>
+                    <td><span class="badge bg-danger">${item.invalid_count || 0}</span></td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <a href="/setmutu/historydetail?id=${item.id}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function populateTrackRecordTable(items) {
+            const tableBody = document.getElementById('trackRecordTableBody');
+            tableBody.innerHTML = '';
+
+            // Group items by unique code to track responses
+            const groupedByCode = {};
+            
+            items.forEach(item => {
+                const uniqueCode = item.filename ? item.filename.split('(')[0] : item.id;
+                
+                if (!groupedByCode[uniqueCode]) {
+                    groupedByCode[uniqueCode] = {
+                        code: uniqueCode,
+                        responses: [],
+                        totalValidations: 0,
+                        totalValidCount: 0,
+                        totalInvalidCount: 0
+                    };
+                }
+                
+                groupedByCode[uniqueCode].responses.push({
+                    responder: item.uploader,
+                    timestamp: item.timestamp,
+                    detections: item.detection_count,
+                    validCount: item.valid_count || 0,
+                    invalidCount: item.invalid_count || 0,
+                    status: item.status
+                });
+                
+                groupedByCode[uniqueCode].totalValidations += item.detection_count;
+                groupedByCode[uniqueCode].totalValidCount += (item.valid_count || 0);
+                groupedByCode[uniqueCode].totalInvalidCount += (item.invalid_count || 0);
+            });
+
+            // Convert to array and populate table
+            const trackRecords = Object.values(groupedByCode);
+            
+            if (trackRecords.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No track records found</td></tr>';
+                return;
+            }
+
+            trackRecords.forEach((record, index) => {
+                const row = document.createElement('tr');
+                
+                // Get unique responders
+                const uniqueResponders = [...new Set(record.responses.map(r => r.responder))];
+                const respondersList = uniqueResponders.map(name => 
+                    `<span class="badge bg-info me-1">${name}</span>`
+                ).join('');
+                
+                // Create detailed response breakdown
+                const responseDetails = record.responses.map((resp, idx) => `
+                    <div class="mb-2 p-2 border-start border-3 border-primary" style="background: #f8f9fa;">
+                        <strong>Response #${idx + 1}</strong><br>
+                        <small class="text-muted"><i class="bi bi-person"></i> ${resp.responder}</small><br>
+                        <small class="text-muted"><i class="bi bi-clock"></i> ${resp.timestamp}</small><br>
+                        <div class="mt-1">
+                            <span class="badge bg-primary">${resp.detections} detections</span>
+                            <span class="badge bg-success">${resp.validCount} response</span>
+                            <span class="badge bg-danger">${resp.invalidCount} unchanged</span>
+                            ${resp.status === 'close' 
+                                ? '<span class="badge bg-success">Completed</span>' 
+                                : '<span class="badge bg-warning">Pending</span>'}
+                        </div>
+                    </div>
+                `).join('');
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong class="text-primary">${record.code}</strong></td>
+                    <td>
+                            <div>total :  ${record.responses.length}</div>
+                        <small class="text-muted">
+                            <span class="badge bg-danger me-1">${record.totalInvalidCount}</span>
+                            total unchanged
+                        </small>
+                    </td>
+                    <td>
+                        <div>Nama :  
+                            ${respondersList}
+                        </div>
+                        <small class="text-muted">
+                            <span class="badge bg-success me-1">${record.totalValidCount}</span>
+                            total response
+                        </small>
+                    </td>
+                    <td>
+                        <div class="accordion accordion-flush" id="accordion${index}">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading${index}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}">
+                                        <i class="bi bi-list-ul me-2"></i>View ${record.responses.length} Response(s)
+                                    </button>
+                                </h2>
+                                <div id="collapse${index}" class="accordion-collapse collapse" 
+                                     aria-labelledby="heading${index}" data-bs-parent="#accordion${index}">
+                                    <div class="accordion-body">
+                                        ${responseDetails}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
         }
 
         function generateClassificationBadges(classifications) {

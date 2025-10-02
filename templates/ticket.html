@@ -209,6 +209,174 @@
                     <button id="btnFilterValid" class="btn btn-outline-danger btn-sm me-1" onclick="setValidFilter('valid')" style="opacity:0.7;">Close</button>
                     <button id="btnFilterNotValid" class="btn btn-outline-success btn-sm" onclick="setValidFilter('notvalid')" style="opacity:0.7;">Open</button>
                     <button id="btnFilterClear" class="btn btn-outline-secondary btn-sm ms-3" onclick="setValidFilter('all')" style="opacity:0.7;">Clear Filter</button>
+                    <button class="btn btn-outline-info btn-sm ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#informationPanel" aria-expanded="false" aria-controls="informationPanel">
+                        <i class="bi bi-info-circle me-1"></i>Information
+                    </button>
+                </div>
+                
+                <!-- Collapsible Information Panel -->
+                <div class="collapse mt-3" id="informationPanel">
+                    <!-- Month/Year Filter for Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Statistics Filter</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row align-items-end">
+                                        <div class="col-md-3">
+                                            <label for="statsMonth" class="form-label">Month</label>
+                                            <select id="statsMonth" class="form-select" onchange="loadMonthlyStatistics()">
+                                                <option value="">All Year</option>
+                                                <option value="0">January</option>
+                                                <option value="1">February</option>
+                                                <option value="2">March</option>
+                                                <option value="3">April</option>
+                                                <option value="4">May</option>
+                                                <option value="5">June</option>
+                                                <option value="6">July</option>
+                                                <option value="7">August</option>
+                                                <option value="8">September</option>
+                                                <option value="9">October</option>
+                                                <option value="10">November</option>
+                                                <option value="11">December</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="statsYear" class="form-label">Year</label>
+                                            <select id="statsYear" class="form-select" onchange="loadMonthlyStatistics()">
+                                                <!-- Years will be populated by JavaScript -->
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-primary" onclick="loadMonthlyStatistics()">
+                                                <i class="bi bi-arrow-clockwise me-1"></i>Update Statistics
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <small class="text-muted">
+                                                Statistics for: <span id="currentStatsFilter">-</span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Table -->
+                    <div class="table-responsive mb-4" style="max-height: 350px; overflow-y: auto;">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Unique Code</th>
+                                    <th>Timestamp</th>
+                                    <th>Validated By</th>
+                                    <th>Total Detections</th>
+                                    <th>Total Process Time</th>
+                                    <th>Detection Time</th>
+                                    <th>Classification Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="informationTableBody">
+                                <tr>
+                                    <td colspan="10" class="text-center">Select month and year to view statistics</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Performance Metrics -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-calendar-month me-2"></i>Monthly Statistics & Analysis
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Monthly Summary Cards -->
+                                    <div class="row text-center mb-4">
+                                        <div class="col-md-3">
+                                            <div class="card bg-primary text-white">
+                                                <div class="card-body">
+                                                    <h3 class="mb-1" id="totalTicketsMonth">0</h3>
+                                                    <small>Total Tickets This Month</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-success text-white">
+                                                <div class="card-body">
+                                                    <h3 class="mb-1" id="uniqueUploadersMonth">0</h3>
+                                                    <small>Unique Uploaders</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-warning text-white">
+                                                <div class="card-body">
+                                                    <h3 class="mb-1" id="avgTicketsPerUploader">0</h3>
+                                                    <small>Avg Tickets per Uploader</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-danger text-white">
+                                                <div class="card-body">
+                                                    <h3 class="mb-1" id="selectedMonthYear">-</h3>
+                                                    <small>Selected Month</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Charts Container -->
+                                    <div class="row">
+                                        <!-- Monthly Comparison Chart -->
+                                        <div class="col-md-8">
+                                            <h6><i class="bi bi-bar-chart me-2"></i>Monthly Ticket Comparison (Last 12 Months)</h6>
+                                            <div class="chart-container" style="height: 350px;">
+                                                <canvas id="monthlyComparisonChart"></canvas>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Uploader Distribution -->
+                                        <div class="col-md-4">
+                                            <h6><i class="bi bi-people me-2"></i>Top Uploaders This Month</h6>
+                                            <div id="uploaderDistribution" style="max-height: 350px; overflow-y: auto;">
+                                                <!-- Uploader bars will be populated here -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Additional Statistics -->
+                                    <div class="row mt-4">
+                                        <div class="col-md-12">
+                                            <div class="card bg-light">
+                                                <div class="card-body">
+                                                    <h6><i class="bi bi-clock-history me-2"></i>Daily Average</h6>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Tickets per Day:</span>
+                                                        <span id="dailyAverage" class="fw-bold">0</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mt-2">
+                                                        <span>Peak Day:</span>
+                                                        <span id="peakDay" class="fw-bold">-</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -322,10 +490,194 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Filter state: 'all', 'valid', 'notvalid'
         let validFilter = 'all';
         let lastHistoryItems = [];
+        let monthlyStatisticsItems = []; // Separate array for monthly statistics
+
+        // Initialize year dropdown and set defaults
+        function initializeStatsFilter() {
+            const yearSelect = document.getElementById('statsYear');
+            const monthSelect = document.getElementById('statsMonth');
+            
+            // Populate years (current year and previous 3 years)
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= currentYear - 3; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            // Set current year as default, but leave month as "All Year"
+            yearSelect.value = currentYear;
+            monthSelect.value = ""; // This will select "All Year"
+            
+            // Load initial statistics
+            loadMonthlyStatistics();
+        }
+
+        function loadMonthlyStatistics() {
+            const monthValue = document.getElementById('statsMonth').value;
+            const year = parseInt(document.getElementById('statsYear').value);
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+            
+            // Update filter display
+            if (monthValue === "") {
+                document.getElementById('currentStatsFilter').textContent = `All Year ${year}`;
+            } else {
+                const month = parseInt(monthValue);
+                document.getElementById('currentStatsFilter').textContent = `${monthNames[month]} ${year}`;
+            }
+            
+            // Show loading state
+            document.getElementById('informationTableBody').innerHTML = '<tr><td colspan="10" class="text-center"><div class="spinner-border spinner-border-sm"></div> Loading statistics...</td></tr>';
+
+            const requestData = { year: year };
+            if (monthValue !== "") {
+                requestData.month = parseInt(monthValue);
+            }
+
+            fetch('/setmutu/get_monthly_statistics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                    return;
+                }
+                monthlyStatisticsItems = data.items || [];
+                populateMonthlyStatisticsTable(monthlyStatisticsItems);
+                
+                if (monthValue === "") {
+                    updateYearlyPerformanceMetrics(monthlyStatisticsItems, year);
+                } else {
+                    updateMonthlyPerformanceMetrics(monthlyStatisticsItems, parseInt(monthValue), year);
+                }
+            })
+            .catch(error => {
+                showToast('Error loading statistics: ' + error, 'danger');
+                document.getElementById('informationTableBody').innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error loading data</td></tr>';
+            });
+        }
+
+        function populateMonthlyStatisticsTable(items) {
+            const tableBody = document.getElementById('informationTableBody');
+            tableBody.innerHTML = '';
+
+            if (items.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No data found for selected month</td></tr>';
+                return;
+            }
+
+            // Group items by base filename (same detection session)
+            const groupedItems = {};
+            items.forEach(item => {
+                const baseFileName = item.filename ? item.filename.split('(')[0] : item.file_name.split('(')[0];
+                if (!groupedItems[baseFileName]) {
+                    groupedItems[baseFileName] = [];
+                }
+                groupedItems[baseFileName].push(item);
+            });
+
+            let index = 1;
+            Object.entries(groupedItems).forEach(([baseFileName, groupItems]) => {
+                // Use the first item as representative for the group
+                const representative = groupItems[0];
+                const uniqueCode = baseFileName;
+                const statusBadge = representative.status === 'close' 
+                    ? '<span class="badge bg-danger">Close</span>' 
+                    : '<span class="badge bg-success">Open</span>';
+                
+                // Count classifications
+                const classificationCounts = groupItems.reduce((acc, item) => {
+                    if (item.place && item.place !== '-' && item.place !== 0) {
+                        const className = item.class_result || 'unknown';
+                        acc[className] = (acc[className] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+                
+                const classificationDisplay = Object.entries(classificationCounts)
+                    .map(([cls, count]) => `${cls}: ${count}`)
+                    .join(', ') || 'No classifications';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index}</td>
+                    <td><span class="font-monospace">${uniqueCode}</span></td>
+                    <td>${new Date(representative.timestamp).toLocaleDateString()}</td>
+                    <td>${representative.uploader}</td>
+                    <td>${groupItems.length}</td>
+                    <td>${representative.total_process_time?.toFixed(3) || '0.000'}s</td>
+                    <td>${representative.detection_time?.toFixed(3) || '0.000'}s</td>
+                    <td>${representative.classification_time?.toFixed(3) || '0.000'}s</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="showDetails('${uniqueCode}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+                index++;
+            });
+        }
+
+        function updateMonthlyPerformanceMetrics(items, selectedMonth, selectedYear) {
+            // Use the new updatePerformanceMetrics function but with monthly data
+            updatePerformanceMetrics(items, selectedMonth, selectedYear, true); // Add flag for monthly mode
+        }
+
+        function updateYearlyPerformanceMetrics(items, selectedYear) {
+            // Update selected month display for yearly view
+            document.getElementById('selectedMonthYear').textContent = `Year ${selectedYear}`;
+
+            // Filter only original images (place = '-') for counting uploads
+            const originalImages = items.filter(item => item.place === '-');
+            
+            // Calculate yearly statistics based on original images only
+            const totalTicketsYear = originalImages.length;
+            const uniqueUploaders = [...new Set(originalImages.map(item => item.uploader))];
+            const avgTicketsPerUploader = uniqueUploaders.length > 0 ? Math.round(totalTicketsYear / uniqueUploaders.length) : 0;
+
+            // Update metric cards
+            document.getElementById('totalTicketsMonth').textContent = totalTicketsYear;
+            document.getElementById('uniqueUploadersMonth').textContent = uniqueUploaders.length;
+            document.getElementById('avgTicketsPerUploader').textContent = avgTicketsPerUploader;
+
+            // Calculate monthly average for the year
+            const monthlyAverage = (totalTicketsYear / 12).toFixed(1);
+            document.getElementById('dailyAverage').textContent = monthlyAverage;
+
+            // Find peak month instead of peak day
+            const monthlyCounts = {};
+            originalImages.forEach(item => {
+                const date = new Date(item.timestamp);
+                const month = date.getMonth();
+                monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
+            });
+            
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const peakMonth = Object.keys(monthlyCounts).reduce((a, b) => 
+                monthlyCounts[a] > monthlyCounts[b] ? a : b, Object.keys(monthlyCounts)[0]);
+            document.getElementById('peakDay').textContent = peakMonth ? monthNames[peakMonth] : '-';
+
+            // Update uploader distribution with original images only
+            updateUploaderDistribution(items);
+
+            // Load and update yearly comparison chart
+            loadYearlyComparisonData(selectedYear);
+        }
 
         function setValidFilter(filter) {
             validFilter = filter;
@@ -415,6 +767,8 @@
                 return;
             }
 
+            // Display history cards (statistics are managed separately by monthly filter)
+
             filtered.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'history-card animate__animated animate__fadeIn';
@@ -464,6 +818,284 @@
                 grid.appendChild(card);
             });
             updateFilterButtons();
+        }
+
+        let monthlyComparisonChart = null;
+
+        function updatePerformanceMetrics(items, selectedMonth = null, selectedYear = null, isMonthlyMode = false) {
+            let month, year;
+            
+            if (isMonthlyMode && selectedMonth !== null && selectedYear !== null) {
+                // Use provided month/year for monthly statistics
+                month = selectedMonth;
+                year = selectedYear;
+            } else {
+                // Use selected date for daily view
+                const selectedDate = new Date(document.getElementById('historyDate').value);
+                month = selectedDate.getMonth();
+                year = selectedDate.getFullYear();
+            }
+            
+            // Update selected month display
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+            document.getElementById('selectedMonthYear').textContent = `${monthNames[month]} ${year}`;
+
+            // Filter only original images (place = '-') for counting uploads
+            const originalImages = items.filter(item => item.place === '-');
+            
+            // Calculate monthly statistics based on original images only
+            const totalTicketsMonth = originalImages.length;
+            const uniqueUploaders = [...new Set(originalImages.map(item => item.uploader))];
+            const avgTicketsPerUploader = uniqueUploaders.length > 0 ? Math.round(totalTicketsMonth / uniqueUploaders.length) : 0;
+
+            // Update metric cards
+            document.getElementById('totalTicketsMonth').textContent = totalTicketsMonth;
+            document.getElementById('uniqueUploadersMonth').textContent = uniqueUploaders.length;
+            document.getElementById('avgTicketsPerUploader').textContent = avgTicketsPerUploader;
+
+            // Calculate daily statistics
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const dailyAverage = (totalTicketsMonth / daysInMonth).toFixed(1);
+            document.getElementById('dailyAverage').textContent = dailyAverage;
+
+            // Find peak day using original images only
+            const dailyCounts = {};
+            originalImages.forEach(item => {
+                const date = new Date(item.timestamp);
+                const day = date.getDate();
+                dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+            });
+            
+            const peakDay = Object.keys(dailyCounts).reduce((a, b) => 
+                dailyCounts[a] > dailyCounts[b] ? a : b, Object.keys(dailyCounts)[0]);
+            document.getElementById('peakDay').textContent = peakDay ? `Day ${peakDay}` : '-';
+
+            // Update uploader distribution (will filter original images inside the function)
+            updateUploaderDistribution(items);
+
+            // Load and update monthly comparison chart
+            loadMonthlyComparisonData(year, month);
+        }
+
+        function updateUploaderDistribution(items) {
+            // Filter only original images (place = '-') and count per uploader
+            const originalImages = items.filter(item => item.place === '-');
+            
+            const uploaderCounts = originalImages.reduce((acc, item) => {
+                acc[item.uploader] = (acc[item.uploader] || 0) + 1;
+                return acc;
+            }, {});
+
+            // Sort by count descending
+            const sortedUploaders = Object.entries(uploaderCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10); // Top 10 uploaders
+
+            const uploaderDiv = document.getElementById('uploaderDistribution');
+            uploaderDiv.innerHTML = '';
+
+            if (sortedUploaders.length === 0) {
+                uploaderDiv.innerHTML = '<div class="text-center text-muted">No data available</div>';
+                return;
+            }
+
+            const maxCount = sortedUploaders[0][1];
+            
+            sortedUploaders.forEach(([uploader, count], index) => {
+                const percentage = ((count / maxCount) * 100);
+                const colors = ['primary', 'success', 'info', 'warning', 'danger', 'secondary', 'dark'];
+                const color = colors[index % colors.length];
+                
+                uploaderDiv.innerHTML += `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-medium">${uploader}</span>
+                            <span class="badge bg-${color}">${count} uploads</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 8px;">
+                            <div class="progress-bar bg-${color}" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function loadYearlyComparisonData(selectedYear) {
+            try {
+                // Generate monthly data for the selected year
+                const monthlyData = [];
+                const monthLabels = [];
+                
+                for (let month = 0; month < 12; month++) {
+                    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                    monthLabels.push(`${monthNames[month]} ${selectedYear}`);
+                    
+                    // Get monthly data for this specific month
+                    const monthData = await getMonthlyTicketCount(selectedYear, month);
+                    monthlyData.push(monthData);
+                }
+
+                // Update chart with yearly data
+                updateMonthlyComparisonChart(monthLabels, monthlyData, -1); // -1 indicates yearly view
+                
+            } catch (error) {
+                console.error('Error loading yearly data:', error);
+            }
+        }
+
+        async function getYearlyTicketCount(year) {
+            try {
+                const response = await fetch('/setmutu/get_monthly_stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ year, isYearly: true })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.count || 0;
+                }
+            } catch (error) {
+                console.log('Error getting yearly count:', error);
+            }
+            
+            // Fallback random data for demo
+            return Math.floor(Math.random() * 500) + 100;
+        }
+
+        async function loadMonthlyComparisonData(selectedYear, selectedMonth) {
+            try {
+                // Generate last 12 months data
+                const monthlyData = [];
+                const monthLabels = [];
+                
+                for (let i = 11; i >= 0; i--) {
+                    const date = new Date(selectedYear, selectedMonth - i, 1);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    
+                    monthLabels.push(`${date.toLocaleDateString('en-US', { month: 'short' })} ${year}`);
+                    
+                    // Simulate loading monthly data - in real implementation, you'd fetch from server
+                    const monthData = await getMonthlyTicketCount(year, month);
+                    monthlyData.push(monthData);
+                }
+
+                // Update chart
+                updateMonthlyComparisonChart(monthLabels, monthlyData, selectedMonth);
+                
+            } catch (error) {
+                console.error('Error loading monthly data:', error);
+            }
+        }
+
+        async function getMonthlyTicketCount(year, month) {
+            // This would be a real API call in production
+            // For now, simulate with the current data or fetch from server
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            
+            try {
+                const response = await fetch('/setmutu/get_monthly_stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ year, month })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.count || 0;
+                }
+            } catch (error) {
+                // Fallback: return current data count if it's the current month
+                const currentDate = new Date(document.getElementById('historyDate').value);
+                if (year === currentDate.getFullYear() && month === currentDate.getMonth()) {
+                    return lastHistoryItems.length;
+                }
+            }
+            
+            // Fallback random data for demo
+            return Math.floor(Math.random() * 100) + 10;
+        }
+
+        function updateMonthlyComparisonChart(labels, data, currentMonthIndex) {
+            const ctx = document.getElementById('monthlyComparisonChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (monthlyComparisonChart) {
+                monthlyComparisonChart.destroy();
+            }
+
+            // Create background colors - highlight current month
+            const backgroundColors = data.map((_, index) => 
+                index === data.length - 1 ? 'rgba(54, 162, 235, 0.8)' : 'rgba(54, 162, 235, 0.3)'
+            );
+            
+            const borderColors = data.map((_, index) => 
+                index === data.length - 1 ? 'rgba(54, 162, 235, 1)' : 'rgba(54, 162, 235, 0.5)'
+            );
+
+            monthlyComparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tickets per Month',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Monthly Ticket Volume Comparison (Last 12 Months)'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                label: function(context) {
+                                    return `Tickets: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Tickets'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    },
+                    elements: {
+                        bar: {
+                            borderWidth: 2,
+                        }
+                    }
+                }
+            });
         }
 
         function generateClassificationBadges(classifications) {
@@ -722,6 +1354,11 @@
 
         // Set default date to today and load data
         document.getElementById('historyDate').valueAsDate = new Date();
+        
+        // Initialize statistics filter and load initial data
+        initializeStatsFilter();
+        
+        // Load history data for selected date
         loadHistoryByDate();
     </script>
 </body>

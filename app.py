@@ -44,8 +44,9 @@ auth_handler = UserAuthHandler()
 # Label kelas untuk training (3-class)
 CLASS_LABELS = ["ripe", "rotten", "unripe"]
 
-def _add_ticket_record(file_name, class_result, place, valid_status=False):
-    """Add a new record to PostgreSQL ticket table via ValidationHandler."""
+def _add_ticket_record(file_name, class_result, place, valid_status=False, 
+                      total_process_time=0.0, detection_time=0.0, classification_time=0.0):
+    """Add a new record to PostgreSQL ticket table via ValidationHandler with timing info."""
     # Map legacy boolean valid_status to status string
     status = 'close' if (isinstance(valid_status, bool) and valid_status) or str(valid_status).lower() == 'true' else 'open'
     username = session.get('username', 'default_user')
@@ -56,7 +57,10 @@ def _add_ticket_record(file_name, class_result, place, valid_status=False):
         class_result=class_result,
         status=status,
         place=place,
-        username=username
+        username=username,
+        total_process_time=total_process_time,
+        detection_time=detection_time,
+        classification_time=classification_time
     )
 
 def generate_base_filename():
@@ -680,6 +684,11 @@ def train():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    import time
+    
+    # Start timing
+    start_time = time.time()
+    
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
     if 'file' not in request.files:
@@ -691,6 +700,10 @@ def upload_file():
         image_stream = file.read()
         image = Image.open(io.BytesIO(image_stream)).convert('RGB')
         width, height = image.size
+        
+        # Start detection timing
+        detection_start = time.time()
+        
         # 1. Deteksi buah & batang
         input_shape = det_input_details[0]['shape']
         img_resized = image.resize((input_shape[1], input_shape[2]))
@@ -707,6 +720,10 @@ def upload_file():
         output_classes = det_interpreter.get_tensor(det_output_details[1]['index'])[0]
         output_scores = det_interpreter.get_tensor(det_output_details[2]['index'])[0]
         num_detections = int(det_interpreter.get_tensor(det_output_details[3]['index'])[0])
+        
+        # End detection timing
+        detection_end = time.time()
+        detection_time = detection_end - detection_start
         detections = []
         for i in range(num_detections):
             score = float(output_scores[i])
@@ -779,8 +796,16 @@ def upload_file():
         detection_image = draw_bounding_boxes_with_numbers(detection_image, filtered_detections)
 
         # 5. Cropping dan klasifikasi
+        # Start classification timing
+        classification_start = time.time()
+        
         cropped_images = crop_detections(image, filtered_detections)
         results = classify_crops(cropped_images)
+        
+        # End classification timing
+        classification_end = time.time()
+        classification_time = classification_end - classification_start
+        
         classification_summary = Counter()
         crops_info = []
 
@@ -816,13 +841,22 @@ def upload_file():
         for label, cnt in classification_summary.items():
             normalized_summary[_normalize_label(label)] += cnt
 
+        # Calculate total process time
+        end_time = time.time()
+        total_process_time = end_time - start_time
+
         return jsonify({
             'original_image': f"data:image/jpeg;base64,{original_img_str}",
             'detection_image': f"data:image/jpeg;base64,{detection_img_str}",
             'detection_count': detection_count,
             'classification_summary': normalized_summary,
             'crops': crops_info,
-            'original_filename': file.filename
+            'original_filename': file.filename,
+            'timing_info': {
+                'total_process_time': round(total_process_time, 3),
+                'detection_time': round(detection_time, 3),
+                'classification_time': round(classification_time, 3)
+            }
         })
 
 
@@ -885,10 +919,17 @@ def save_all_classifications():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
 
+        # Extract timing information from the request
+        timing_info = data.get('timing_info', {})
+        total_process_time = timing_info.get('total_process_time', 0.0)
+        detection_time = timing_info.get('detection_time', 0.0)
+        classification_time = timing_info.get('classification_time', 0.0)
+
         # Generate base filename using the existing function - SATU base_name untuk semua file
         base_name = generate_base_filename()
         extension = '.jpg'
         print(f"Generated base_name: {base_name}")  # Debug log
+        print(f"Timing info - Total: {total_process_time}s, Detection: {detection_time}s, Classification: {classification_time}s")
         
         saved_files = []  # Track semua file yang disimpan
         
@@ -910,7 +951,8 @@ def save_all_classifications():
             
             print(f"Saved original: {original_filename}")  # Debug log
             saved_files.append(original_filename)
-            _add_ticket_record(original_filename, "original", "-")
+            _add_ticket_record(original_filename, "original", "-", False, 
+                             total_process_time, detection_time, classification_time)
         
         # 2. Save detection image with (0)
         detection_image_data = data.get('detection_image')
@@ -930,7 +972,8 @@ def save_all_classifications():
             
             print(f"Saved detection: {detection_filename}")  # Debug log
             saved_files.append(detection_filename)
-            _add_ticket_record(detection_filename, "detection", 0)
+            _add_ticket_record(detection_filename, "detection", 0, False,
+                             total_process_time, detection_time, classification_time)
 
         # 3. Save each crop with sequential numbers in parentheses
         crops_data = data.get('crops', [])
@@ -961,7 +1004,8 @@ def save_all_classifications():
                 
                 # Add to database with the classification label and place number
                 classification_label = _normalize_label(crop.get('label', 'unripe'))
-                _add_ticket_record(crop_filename, classification_label, i)
+                _add_ticket_record(crop_filename, classification_label, i, False,
+                                 total_process_time, detection_time, classification_time)
                 
                 print(f"Saved crop {i}: {crop_filename} with label {classification_label}")
                 saved_files.append(crop_filename)
@@ -1002,6 +1046,35 @@ def database_status():
         'class_counts': dict(class_counts),
         'total_images': total_images
     })
+
+# Route for getting timing statistics
+@app.route('/timing_statistics')
+def timing_statistics():
+    if 'username' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    try:
+        group_id = request.args.get('group_id')
+        date_filter = request.args.get('date')
+        
+        stats = validation_handler.get_timing_statistics(group_id, date_filter)
+        
+        if stats:
+            return jsonify({
+                'success': True,
+                'statistics': stats
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'No timing data found'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 # History Routes - Separate from main functionality
 @app.route('/history')
@@ -1091,7 +1164,7 @@ def get_validate_history_by_date():
             result_items.append({
                 'id': key,
                 'filename': f"{gi['base_name']}(-).jpg",
-                'image_path': f"/setmutu/static/uploads/{gi['base_name']}(-).jpg",
+                'image_path': f"static/uploads/{gi['base_name']}(-).jpg",
                 'timestamp': time_part,
                 'detection_count': len(entries),
                 'classifications': classifications,
@@ -1143,7 +1216,7 @@ def get_validate_history_detail():
                 continue
             items.append({
                 'file_name': fname,
-                'image_path': f"/setmutu/static/uploads/{fname}",
+                'image_path': f"static/uploads/{fname}",
                 'class_result': e.get('class_result', 'Unknown'),
                 'valid_status': bool(e.get('valid_status', False)),
                 'place': e.get('place')
@@ -1166,7 +1239,7 @@ def get_validate_history_detail():
             summary[cls_name] = summary.get(cls_name, 0) + 1
 
         return jsonify({
-            'base_image': f"/setmutu/static/uploads/{base_name}(-).jpg",
+            'base_image': f"setmutu/static/uploads/{base_name}(-).jpg",
             'timestamp': batch_ts,
             'username_yang_mengubah': username_change,
             'items': items,
@@ -1239,7 +1312,7 @@ def get_history_by_date():
                     original_images.append({
                         'id': base_name,
                         'filename': filename,
-                        'image_path': f"/setmutu/static/uploads/{filename}",
+                        'image_path': f"static/uploads/{filename}",
                         'timestamp': formatted_time,
                         'detection_count': detection_count,
                         'classifications': classifications,
@@ -1275,12 +1348,12 @@ def get_history_by_date():
                     
                     if entry['place'] == '-':
                         # Original image
-                        date_items[base_name]['image_path'] = f"/setmutu/static/uploads/{filename}"
+                        date_items[base_name]['image_path'] = f"static/uploads/{filename}"
                     elif entry['place'] > 0:
                         # Count detections
                         date_items[base_name]['detection_count'] += 1
                         date_items[base_name]['crops'].append({
-                            'image': f"/setmutu/static/uploads/{filename}",
+                            'image': f"static/uploads/{filename}",
                             'classification': entry['class_result'],
                             'confidence': 100  # Add actual confidence if available
                         })
@@ -1321,6 +1394,37 @@ def validate_page():
         return redirect(url_for('index'))
     return render_template('validate.html')
 
+@app.route('/get_monthly_stats', methods=['POST'])
+def get_monthly_stats():
+    """Get monthly statistics for ticket dashboard"""
+    if 'username' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    try:
+        data = request.get_json()
+        year = data.get('year')
+        month = data.get('month')  # 0-based month (0 = January)
+        
+        if year is None or month is None:
+            return jsonify({'error': 'Year and month are required'}), 400
+            
+        # Get current user's group from session
+        current_user_group = session.get('group', 'user')
+        
+        # Get monthly ticket count from database
+        count = validation_handler.get_monthly_ticket_count(year, month + 1, current_user_group)  # Convert to 1-based month
+        
+        return jsonify({
+            'success': True,
+            'count': count,
+            'year': year,
+            'month': month
+        })
+        
+    except Exception as e:
+        print(f"Error in get_monthly_stats: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/get_detection_details', methods=['POST'])
 def get_detection_details():
     """Get historical detection details for viewing"""
@@ -1357,7 +1461,7 @@ def get_detection_details():
 
         for entry in entries:
             filename = entry['file_name']
-            image_path = f"/setmutu/static/uploads/{filename}"
+            image_path = f"static/uploads/{filename}"
 
             if entry['place'] == '-':
                 details['original_image'] = image_path
@@ -1383,6 +1487,148 @@ def get_detection_details():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Routes with /setmutu/ prefix for UI navigation
+@app.route('/setmutu/')
+def setmutu_index():
+    return redirect('/index')
+
+@app.route('/setmutu/index')
+def setmutu_dashboard():
+    return dashboard()
+
+@app.route('/setmutu/ticket')
+def setmutu_ticket():
+    return ticket()
+
+@app.route('/setmutu/history')
+def setmutu_history():
+    return history()
+
+@app.route('/setmutu/train')
+def setmutu_train():
+    return train()
+
+@app.route('/setmutu/logout')
+def setmutu_logout():
+    return logout()
+
+@app.route('/setmutu/validate')
+def setmutu_validate():
+    return validate_page()
+
+@app.route('/setmutu/register', methods=['GET', 'POST'])
+def setmutu_register():
+    return register()
+
+@app.route('/setmutu/historydetail')
+def setmutu_history_detail():
+    return history_detail()
+
+@app.route('/setmutu/ticketsession')
+def setmutu_ticket_session():
+    return ticket_session()
+
+@app.route('/setmutu/static/<path:filename>')
+def setmutu_static(filename):
+    return send_from_directory('static', filename)
+
+@app.route('/setmutu/download/<path:filename>')
+def setmutu_download(filename):
+    return download_file(filename)
+
+@app.route('/setmutu/upload', methods=['POST'])
+def setmutu_upload():
+    return upload_file()
+
+@app.route('/setmutu/save_crop', methods=['POST'])
+def setmutu_save_crop():
+    return save_crop_endpoint()
+
+@app.route('/setmutu/save_all_classifications', methods=['POST'])
+def setmutu_save_all_classifications():
+    return save_all_classifications()
+
+@app.route('/setmutu/update_valid_status', methods=['POST'])
+def setmutu_update_valid_status():
+    return update_valid_status()
+
+@app.route('/setmutu/submit_validations', methods=['POST'])
+def setmutu_submit_validations():
+    return submit_validations()
+
+@app.route('/setmutu/verify', methods=['POST'])
+def setmutu_verify():
+    return verify_classification()
+
+@app.route('/setmutu/database_status')
+def setmutu_database_status():
+    return database_status()
+
+@app.route('/setmutu/timing_statistics')
+def setmutu_timing_statistics():
+    return timing_statistics()
+
+@app.route('/setmutu/get_validate_history_by_date', methods=['POST'])
+def setmutu_get_validate_history_by_date():
+    return get_validate_history_by_date()
+
+@app.route('/setmutu/get_validate_history_detail', methods=['POST'])
+def setmutu_get_validate_history_detail():
+    return get_validate_history_detail()
+
+@app.route('/setmutu/get_monthly_stats', methods=['POST'])
+def setmutu_get_monthly_stats():
+    return get_monthly_stats()
+
+@app.route('/setmutu/get_history_by_date', methods=['POST'])
+def setmutu_get_history_by_date():
+    return get_history_by_date()
+
+@app.route('/setmutu/get_detection_details', methods=['POST'])
+def setmutu_get_detection_details():
+    return get_detection_details()
+
+@app.route('/setmutu/get_monthly_statistics', methods=['POST'])
+def setmutu_get_monthly_statistics():
+    """Get monthly statistics for entire month regardless of date filter"""
+    if 'username' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    try:
+        data = request.get_json()
+        year = data.get('year')
+        month = data.get('month')  # Optional - if not provided, get whole year
+        
+        if year is None:
+            return jsonify({'error': 'Year is required'}), 400
+            
+        # Get current user's group from session
+        current_user_group = session.get('group', 'user')
+        
+        # Get statistics from database
+        if month is not None:
+            # Get data for specific month
+            items = validation_handler.get_monthly_ticket_data(year, month + 1, current_user_group)  # Convert to 1-based month
+        else:
+            # Get data for entire year
+            items = validation_handler.get_yearly_ticket_data(year, current_user_group)
+        
+        return jsonify({
+            'success': True,
+            'items': items,
+            'year': year,
+            'month': month,
+            'count': len(items)
+        })
+        
+    except Exception as e:
+        print(f"Error in setmutu_get_monthly_statistics: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/setmutu/set_status', methods=['POST'])
+def setmutu_set_status():
+    return set_status()
 
 if __name__ == '__main__':
     app.run(debug=True)

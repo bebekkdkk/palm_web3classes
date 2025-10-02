@@ -422,6 +422,46 @@
                         </div>
                     </div>
 
+                    <!-- Performance Metrics -->
+                    <div class="row mt-4" id="performanceMetrics" style="display: none;">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-speedometer2 me-2"></i>
+                                        Performance Metrics
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <div class="border-end">
+                                                <div class="h4 mb-1 text-primary">
+                                                    <span id="totalProcessTime">-</span>s
+                                                </div>
+                                                <small class="text-muted">Total Process Time</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="border-end">
+                                                <div class="h4 mb-1 text-info">
+                                                    <span id="detectionTime">-</span>s
+                                                </div>
+                                                <small class="text-muted">Detection Time</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="h4 mb-1 text-warning">
+                                                <span id="classificationTime">-</span>s
+                                            </div>
+                                            <small class="text-muted">Classification Time</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Individual Classifications -->
                     <div class="mt-5">
                         <h5 class="mb-4">
@@ -531,6 +571,7 @@
         }
 
         let originalImageBase64 = ''; // Tambahkan variabel untuk menyimpan gambar asli
+        let timingInfo = null; // Variable untuk menyimpan informasi timing
 
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -563,6 +604,18 @@
                 if (data.error) {
                     showToast(data.error, 'danger');
                     return;
+                }
+
+                // Save timing information
+                timingInfo = data.timing_info;
+                if (timingInfo) {
+                    console.log('Timing Info:', timingInfo);
+                    
+                    // Display performance metrics
+                    document.getElementById('performanceMetrics').style.display = 'block';
+                    document.getElementById('totalProcessTime').textContent = timingInfo.total_process_time;
+                    document.getElementById('detectionTime').textContent = timingInfo.detection_time;
+                    document.getElementById('classificationTime').textContent = timingInfo.classification_time;
                 }
 
                 // Smooth scroll to results
@@ -747,7 +800,8 @@
                     body: JSON.stringify({
                         original_image: originalImageData,
                         detection_image: detectionImageData,
-                        crops: crops
+                        crops: crops,
+                        timing_info: timingInfo // Include timing information
                     })
                 });
                 
