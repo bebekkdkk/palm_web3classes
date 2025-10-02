@@ -1487,110 +1487,9 @@ def get_detection_details():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# Routes with /setmutu/ prefix for UI navigation
-@app.route('/setmutu/')
-def setmutu_index():
-    return redirect('/index')
-
-@app.route('/setmutu/index')
-def setmutu_dashboard():
-    return dashboard()
-
-@app.route('/setmutu/ticket')
-def setmutu_ticket():
-    return ticket()
-
-@app.route('/setmutu/history')
-def setmutu_history():
-    return history()
-
-@app.route('/setmutu/train')
-def setmutu_train():
-    return train()
-
-@app.route('/setmutu/logout')
-def setmutu_logout():
-    return logout()
-
-@app.route('/setmutu/validate')
-def setmutu_validate():
-    return validate_page()
-
-@app.route('/setmutu/register', methods=['GET', 'POST'])
-def setmutu_register():
-    return register()
-
-@app.route('/setmutu/historydetail')
-def setmutu_history_detail():
-    return history_detail()
-
-@app.route('/setmutu/ticketsession')
-def setmutu_ticket_session():
-    return ticket_session()
-
-@app.route('/setmutu/static/<path:filename>')
-def setmutu_static(filename):
-    return send_from_directory('static', filename)
-
-@app.route('/setmutu/download/<path:filename>')
-def setmutu_download(filename):
-    return download_file(filename)
-
-@app.route('/setmutu/upload', methods=['POST'])
-def setmutu_upload():
-    return upload_file()
-
-@app.route('/setmutu/save_crop', methods=['POST'])
-def setmutu_save_crop():
-    return save_crop_endpoint()
-
-@app.route('/setmutu/save_all_classifications', methods=['POST'])
-def setmutu_save_all_classifications():
-    return save_all_classifications()
-
-@app.route('/setmutu/update_valid_status', methods=['POST'])
-def setmutu_update_valid_status():
-    return update_valid_status()
-
-@app.route('/setmutu/submit_validations', methods=['POST'])
-def setmutu_submit_validations():
-    return submit_validations()
-
-@app.route('/setmutu/verify', methods=['POST'])
-def setmutu_verify():
-    return verify_classification()
-
-@app.route('/setmutu/database_status')
-def setmutu_database_status():
-    return database_status()
-
-@app.route('/setmutu/timing_statistics')
-def setmutu_timing_statistics():
-    return timing_statistics()
-
-@app.route('/setmutu/get_validate_history_by_date', methods=['POST'])
-def setmutu_get_validate_history_by_date():
-    return get_validate_history_by_date()
-
-@app.route('/setmutu/get_validate_history_detail', methods=['POST'])
-def setmutu_get_validate_history_detail():
-    return get_validate_history_detail()
-
-@app.route('/setmutu/get_monthly_stats', methods=['POST'])
-def setmutu_get_monthly_stats():
-    return get_monthly_stats()
-
-@app.route('/setmutu/get_history_by_date', methods=['POST'])
-def setmutu_get_history_by_date():
-    return get_history_by_date()
-
-@app.route('/setmutu/get_detection_details', methods=['POST'])
-def setmutu_get_detection_details():
-    return get_detection_details()
-
-@app.route('/setmutu/get_monthly_statistics', methods=['POST'])
-def setmutu_get_monthly_statistics():
+    
+@app.route('/get_monthly_statistics', methods=['POST'])
+def get_monthly_statistics():
     """Get monthly statistics for entire month regardless of date filter"""
     if 'username' not in session:
         return jsonify({'error': 'Authentication required'}), 401
@@ -1623,12 +1522,10 @@ def setmutu_get_monthly_statistics():
         })
         
     except Exception as e:
-        print(f"Error in setmutu_get_monthly_statistics: {str(e)}")
+        print(f"Error in get_monthly_statistics: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/setmutu/set_status', methods=['POST'])
-def setmutu_set_status():
-    return set_status()
+
 
 if __name__ == '__main__':
     app.run(debug=True)
