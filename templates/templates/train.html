@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palm Oil Validation History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+     <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --border-radius: 8px;
+        }
+        .card-header {
+            background: white;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+         .container {
+            max-width: 1400px;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            font-size: 1.4rem;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            padding: 0.8rem 1rem !important;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--bs-primary) !important;
+            background: rgba(13, 110, 253, 0.05);
+            border-radius: 6px;
+        }
+
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .history-card {
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .history-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .history-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .history-info {
+            padding: 15px;
+            background: white;
+        }
+
+        .date-picker {
+            margin-bottom: 20px;
+        }
+
+        .modal-content {
+            border-radius: var(--border-radius);
+        }
+
+        .crop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .crop-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background: white;
+        }
+
+        .crop-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-action {
+            margin: 5px;
+            border-radius: var(--border-radius);
+        }
+
+        .classification-badge {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin-right: 5px;
+        }
+
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+        }
+
+        /* Training Page Styles */
+        .training-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .training-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .training-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .test-result-card {
+            display: none;
+        }
+
+        .class-filter-btn {
+            margin: 0.25rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .gallery-item {
+            position: relative;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .gallery-item .badge {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+        }
+
+        #gallerySection {
+            display: none;
+        }
+
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .fullscreen-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        .fullscreen-modal.show {
+            display: flex;
+        }
+
+        #testImagePreview {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/setmutu/">
+                <i class="bi bi-camera text-primary me-2"></i>
+                Palm Oil Detector
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/setmutu/">
+                            <i class="bi bi-house-door me-1"></i>
+                            Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/setmutu/ticket">
+                            <i class="bi bi-ticket me-1"></i>
+                            Ticket
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/setmutu/history">
+                            <i class="bi bi-clock-history me-1"></i>
+                            History
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/setmutu/train">
+                            <i class="bi bi-gear me-1"></i>
+                            Training
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/setmutu/logout">
+                            <i class="bi bi-box-arrow-right me-1"></i>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Training Options Cards -->
+        <div class="row mb-4">
+            <!-- Card 1: Training Model -->
+            <div class="col-md-6">
+                <div class="card training-card" onclick="window.location.href='/setmutu/traincolab'">
+                    <div class="card-body text-center p-4">
+                        <i class="bi bi-gpu-card training-icon text-primary"></i>
+                        <h4 class="card-title mb-3">Model Training</h4>
+                        <p class="text-muted">Train your classification model using Google Colab</p>
+                        <button class="btn btn-primary">
+                            <i class="bi bi-play-circle me-2"></i>Start Training
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Testing Model -->
+            <div class="col-md-6">
+                <div class="card training-card" onclick="showTestSection()">
+                    <div class="card-body text-center p-4">
+                        <i class="bi bi-check2-circle training-icon text-success"></i>
+                        <h4 class="card-title mb-3">Model Testing</h4>
+                        <p class="text-muted">Test classification model on images or folders</p>
+                        <button class="btn btn-success">
+                            <i class="bi bi-image me-2"></i>Test Model
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Section (Hidden by default) -->
+        <div class="card test-result-card" id="testSection">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-check2-circle me-2"></i>Classification Testing
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Upload Mode Selection -->
+                <div class="btn-group w-100 mb-4" role="group">
+                    <input type="radio" class="btn-check" name="uploadMode" id="modeImage" checked onchange="switchUploadMode('image')">
+                    <label class="btn btn-outline-primary" for="modeImage">
+                        <i class="bi bi-file-image me-2"></i>Single Image
+                    </label>
+                    
+                    <input type="radio" class="btn-check" name="uploadMode" id="modeFolder" onchange="switchUploadMode('folder')">
+                    <label class="btn btn-outline-primary" for="modeFolder">
+                        <i class="bi bi-folder me-2"></i>Folder (Multiple Images)
+                    </label>
+                </div>
+
+                <!-- Single Image Mode -->
+                <div id="singleImageMode">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Upload Single Image</label>
+                            <input type="file" class="form-control mb-3" id="testImageInput" accept="image/*" onchange="handleTestImage(event)">
+                            <div class="text-center mb-3">
+                                <img id="testImagePreview" src="" alt="" style="display:none;">
+                            </div>
+                            <button class="btn btn-primary w-100" onclick="classifyTestImage()">
+                                <i class="bi bi-play-circle me-2"></i>Classify Image
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-3 text-muted">Classification Results</h6>
+                                    <div id="testResults">
+                                        <p class="text-center text-muted">Upload an image to see results</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Folder Mode -->
+                <div id="folderMode" style="display:none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Select Folder (Multiple Images)</label>
+                            <input type="file" class="form-control mb-3" id="testFolderInput" accept="image/*" multiple webkitdirectory directory onchange="handleFolderUpload(event)">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Selected: <strong id="folderName">No folder selected</strong><br>
+                                Images: <strong id="imageCount">0</strong>
+                            </div>
+                            <button class="btn btn-success w-100" onclick="classifyFolder()" id="classifyFolderBtn" disabled>
+                                <i class="bi bi-play-circle me-2"></i>Classify All Images
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-3 text-muted">Folder Classification Summary</h6>
+                                    <div id="folderResults">
+                                        <p class="text-center text-muted">Select a folder to classify</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dataset Gallery Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-images me-2"></i>Training Dataset Gallery
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <button class="btn btn-success class-filter-btn" onclick="showGallery('ripe')">
+                        <i class="bi bi-check-circle me-1"></i>Ripe
+                    </button>
+                    <button class="btn btn-dark class-filter-btn" onclick="showGallery('rotten')">
+                        <i class="bi bi-x-circle me-1"></i>Rotten
+                    </button>
+                    <button class="btn btn-primary class-filter-btn" onclick="showGallery('unripe')">
+                        <i class="bi bi-circle me-1"></i>Unripe
+                    </button>
+                </div>
+
+                <!-- Gallery Display Area -->
+                <div id="gallerySection">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">Showing: <span id="currentClass" class="text-primary"></span></h6>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="closeGallery()">
+                            <i class="bi bi-x"></i> Close
+                        </button>
+                    </div>
+                    <div class="loading-overlay" id="galleryLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="gallery-grid" id="galleryGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Image Modal -->
+    <div class="fullscreen-modal" id="fullscreenModal" onclick="closeFullscreen()">
+        <img id="fullscreenImage" src="" alt="">
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentTestImage = null;
+        let galleryImages = [];
+        let currentPage = 1;
+        const imagesPerPage = 50;
+        let folderFiles = [];
+        let uploadMode = 'image';
+
+        function showTestSection() {
+            const section = document.getElementById('testSection');
+            section.style.display = 'block';
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function switchUploadMode(mode) {
+            uploadMode = mode;
+            const singleMode = document.getElementById('singleImageMode');
+            const folderModeDiv = document.getElementById('folderMode');
+            
+            if (mode === 'image') {
+                singleMode.style.display = 'block';
+                folderModeDiv.style.display = 'none';
+            } else {
+                singleMode.style.display = 'none';
+                folderModeDiv.style.display = 'block';
+            }
+        }
+
+        function handleTestImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentTestImage = e.target.result;
+                    const preview = document.getElementById('testImagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleFolderUpload(event) {
+            folderFiles = Array.from(event.target.files);
+            
+            if (folderFiles.length === 0) {
+                return;
+            }
+
+            // Get folder name from first file path
+            const firstFile = folderFiles[0];
+            const pathParts = firstFile.webkitRelativePath.split('/');
+            const folderName = pathParts.length > 1 ? pathParts[0] : 'Selected Folder';
+            
+            document.getElementById('folderName').textContent = folderName;
+            document.getElementById('imageCount').textContent = folderFiles.length;
+            document.getElementById('classifyFolderBtn').disabled = false;
+        }
+
+        async function classifyTestImage() {
+            if (!currentTestImage) {
+                alert('Please upload an image first');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Classifying...</p></div>';
+
+            try {
+                // Convert base64 to blob
+                const blob = await fetch(currentTestImage).then(r => r.blob());
+                const formData = new FormData();
+                formData.append('file', blob, 'test.jpg');
+
+                const response = await fetch('/setmutu/classify_single', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    return;
+                }
+
+                // Display classification results
+                const resultHTML = `
+                    <div class="text-center">
+                        <h4 class="mb-3">Classification: <span class="badge bg-${getClassColor(data.label)}">${data.label}</span></h4>
+                        <div class="progress mb-3" style="height: 30px;">
+                            <div class="progress-bar bg-${getClassColor(data.label)}" 
+                                 role="progressbar" 
+                                 style="width: ${(data.confidence * 100).toFixed(1)}%">
+                                ${(data.confidence * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <small class="text-muted d-block">Ripe</small>
+                                <strong>${(data.probabilities.ripe * 100).toFixed(1)}%</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Rotten</small>
+                                <strong>${(data.probabilities.rotten * 100).toFixed(1)}%</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Unripe</small>
+                                <strong>${(data.probabilities.unripe * 100).toFixed(1)}%</strong>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultsDiv.innerHTML = resultHTML;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function classifyFolder() {
+            if (folderFiles.length === 0) {
+                alert('Please select a folder first');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('folderResults');
+            const folderName = document.getElementById('folderName').textContent;
+            
+            resultsDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Classifying ${folderFiles.length} images...</p>
+                    <p class="text-muted">This may take a while</p>
+                </div>
+            `;
+
+            try {
+                const formData = new FormData();
+                
+                // Add all files to formData
+                folderFiles.forEach((file, index) => {
+                    formData.append('files', file);
+                });
+                
+                formData.append('folder_name', folderName);
+
+                const response = await fetch('/setmutu/classify_folder', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    return;
+                }
+
+                // Display folder results
+                const summary = data.summary;
+                const total = data.total;
+                
+                const resultHTML = `
+                    <div class="mb-3">
+                        <h5 class="mb-3">
+                            <i class="bi bi-folder-fill me-2 text-primary"></i>
+                            ${folderName}
+                        </h5>
+                        <p class="text-muted mb-3">Total Images: <strong>${total}</strong></p>
+                        
+                        <div class="mb-3">
+                            <h6 class="mb-2">Classification Distribution:</h6>
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span><i class="bi bi-circle-fill text-success me-2"></i>Ripe</span>
+                                    <strong>${summary.ripe} (${((summary.ripe/total)*100).toFixed(1)}%)</strong>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-success" style="width: ${(summary.ripe/total)*100}%">
+                                        ${summary.ripe}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span><i class="bi bi-circle-fill text-dark me-2"></i>Rotten</span>
+                                    <strong>${summary.rotten} (${((summary.rotten/total)*100).toFixed(1)}%)</strong>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-dark" style="width: ${(summary.rotten/total)*100}%">
+                                        ${summary.rotten}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span><i class="bi bi-circle-fill text-primary me-2"></i>Unripe</span>
+                                    <strong>${summary.unripe} (${((summary.unripe/total)*100).toFixed(1)}%)</strong>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-primary" style="width: ${(summary.unripe/total)*100}%">
+                                        ${summary.unripe}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Classification completed successfully!
+                        </div>
+                    </div>
+                `;
+                
+                resultsDiv.innerHTML = resultHTML;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        function getClassColor(label) {
+            const colors = {
+                'ripe': 'success',
+                'rotten': 'dark',
+                'unripe': 'primary'
+            };
+            return colors[label] || 'secondary';
+        }
+
+        async function showGallery(className) {
+            const gallerySection = document.getElementById('gallerySection');
+            const galleryGrid = document.getElementById('galleryGrid');
+            const currentClassSpan = document.getElementById('currentClass');
+            const loadingOverlay = document.getElementById('galleryLoading');
+            
+            gallerySection.style.display = 'block';
+            currentClassSpan.textContent = className.charAt(0).toUpperCase() + className.slice(1);
+            galleryGrid.innerHTML = '';
+            loadingOverlay.classList.add('show');
+            currentPage = 1;
+
+            try {
+                const response = await fetch('/setmutu/get_dataset_images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        class_name: className,
+                        page: currentPage,
+                        per_page: imagesPerPage
+                    })
+                });
+
+                const data = await response.json();
+                loadingOverlay.classList.remove('show');
+
+                if (data.error) {
+                    galleryGrid.innerHTML = `<div class="col-12 text-center"><p class="text-danger">${data.error}</p></div>`;
+                    return;
+                }
+
+                galleryImages = data.images || [];
+                renderGallery(galleryImages);
+
+                // Setup infinite scroll
+                galleryGrid.addEventListener('scroll', handleScroll);
+
+            } catch (error) {
+                loadingOverlay.classList.remove('show');
+                galleryGrid.innerHTML = `<div class="col-12 text-center"><p class="text-danger">Error loading images: ${error.message}</p></div>`;
+            }
+
+            gallerySection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderGallery(images) {
+            const galleryGrid = document.getElementById('galleryGrid');
+            
+            if (images.length === 0) {
+                galleryGrid.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No images found in this category</p></div>';
+                return;
+            }
+
+            images.forEach(image => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.innerHTML = `
+                    <img src="${image.path}" alt="${image.class}" onclick="openFullscreen('${image.path}')">
+                    <span class="badge bg-${getClassColor(image.class)}">${image.class}</span>
+                `;
+                galleryGrid.appendChild(item);
+            });
+        }
+
+        function handleScroll() {
+            const galleryGrid = document.getElementById('galleryGrid');
+            if (galleryGrid.scrollTop + galleryGrid.clientHeight >= galleryGrid.scrollHeight - 100) {
+                loadMoreImages();
+            }
+        }
+
+        async function loadMoreImages() {
+            const currentClassSpan = document.getElementById('currentClass');
+            const className = currentClassSpan.textContent.toLowerCase();
+            currentPage++;
+
+            try {
+                const response = await fetch('/setmutu/get_dataset_images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        class_name: className,
+                        page: currentPage,
+                        per_page: imagesPerPage
+                    })
+                });
+
+                const data = await response.json();
+                if (data.images && data.images.length > 0) {
+                    renderGallery(data.images);
+                }
+            } catch (error) {
+                console.error('Error loading more images:', error);
+            }
+        }
+
+        function closeGallery() {
+            document.getElementById('gallerySection').style.display = 'none';
+        }
+
+        function openFullscreen(imagePath) {
+            const modal = document.getElementById('fullscreenModal');
+            const img = document.getElementById('fullscreenImage');
+            img.src = imagePath;
+            modal.classList.add('show');
+        }
+
+        function closeFullscreen() {
+            document.getElementById('fullscreenModal').classList.remove('show');
+        }
+
+        // Close fullscreen on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>

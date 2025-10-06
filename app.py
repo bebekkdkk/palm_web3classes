@@ -11,12 +11,15 @@ import io
 import base64
 import numpy as np
 import tensorflow as tf
+from dotenv import load_dotenv
 from validation_handler import ValidationHandler
 from userAuth_hendler import UserAuthHandler
 
 # =============================
 # Inisialisasi Flask & Folder
 # =============================
+load_dotenv()
+
 app = Flask(__name__)
 app.config['Application_ROOT']='setmutu'
 app.secret_key = 'your-secret-key-here'  # Replace with a secure secret key
@@ -31,11 +34,27 @@ def now_local():
         # Fallback if zoneinfo/tz not available
         return datetime.datetime.now()
 
-# Folder konfigurasi
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
+# Folder konfigurasi berbasis environment
+_default_upload = Path('static') / 'uploads'
+configured_path = os.environ.get('IMGPATH') or str(_default_upload)
+UPLOAD_FOLDER = Path(configured_path).expanduser()
+if not UPLOAD_FOLDER.is_absolute():
+    UPLOAD_FOLDER = (Path(__file__).resolve().parent / UPLOAD_FOLDER).resolve()
 
-# Buat folder utama
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Buat folder utama sesuai konfigurasi
+try:
+    UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+except Exception as exc:
+    raise RuntimeError(f"Failed to create image directory at '{UPLOAD_FOLDER}': {exc}") from exc
+
+def _image_fs_path(filename: str | Path) -> Path:
+    """Return absolute filesystem path for an image filename."""
+    return UPLOAD_FOLDER / Path(filename).name
+
+def _image_url(filename: str) -> str:
+    """Return route URL for serving stored images."""
+    clean_name = Path(filename).name.replace('\\', '/')
+    return url_for('serve_image', filename=clean_name)
 
 # Inisialisasi validation handler dan auth handler
 validation_handler = ValidationHandler()
@@ -367,6 +386,16 @@ def download_file(filename):
     return send_from_directory('static', filename, as_attachment=True)
 
 
+@app.route('/images/<path:filename>')
+def serve_image(filename):
+    return send_from_directory(str(UPLOAD_FOLDER), filename)
+
+
+@app.route('/setmutu/images/<path:filename>')
+def setmutu_serve_image(filename):
+    return serve_image(filename)
+
+
 det_class_names = ['buah', 'batang']
 cls_labels = ["ripe", "rotten", "unripe"]
 
@@ -676,10 +705,190 @@ def classify_crops(cropped_images):
 
 @app.route('/train')
 def train():
-    """Redirect to Colab for training"""
+    """Training page with testing and gallery features"""
     if 'username' not in session:
         return redirect(url_for('index'))
     return render_template('train.html')
+
+@app.route('/traincolab')
+def traincolab():
+    """Redirect to Google Colab for training"""
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    return render_template('traincolab.html')
+
+@app.route('/classify_single', methods=['POST'])
+def classify_single():
+    """Classify a single image without detection"""
+    if 'username' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'})
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'})
+    
+    try:
+        # Read and preprocess image
+        image_stream = file.read()
+        image = Image.open(io.BytesIO(image_stream)).convert('RGB')
+        
+        # Resize to classification model input size
+        input_size = (cls_input_details[0]['shape'][1], cls_input_details[0]['shape'][2])
+        img_resized = image.resize(input_size)
+        img_array = np.array(img_resized, dtype=np.float32) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+        
+        # Run classification
+        cls_interpreter.set_tensor(cls_input_details[0]['index'], img_array)
+        cls_interpreter.invoke()
+        output_data = cls_interpreter.get_tensor(cls_output_details[0]['index'])[0]
+        
+        # Get predictions
+        pred_class = np.argmax(output_data)
+        pred_conf = float(output_data[pred_class])
+        pred_label = _normalize_label(cls_labels[pred_class])
+        
+        # Get all probabilities
+        probabilities = {
+            'ripe': float(output_data[0]),
+            'rotten': float(output_data[1]),
+            'unripe': float(output_data[2])
+        }
+        
+        return jsonify({
+            'label': pred_label,
+            'confidence': pred_conf,
+            'probabilities': probabilities
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_training_images', methods=['POST'])
+def get_training_images():
+    """Get images from training dataset folder (deprecated - use get_dataset_images)"""
+    return get_dataset_images()
+
+@app.route('/get_dataset_images', methods=['POST'])
+def get_dataset_images():
+    """Get images from static/dataset folder"""
+    if 'username' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    try:
+        data = request.get_json()
+        class_name = data.get('class_name', 'ripe')
+        page = data.get('page', 1)
+        per_page = data.get('per_page', 50)
+        
+        # Always use static/dataset path
+        dataset_path = Path('static') / 'dataset'
+        
+        # Get class folder path (capitalize first letter)
+        class_folder = dataset_path / class_name.capitalize()
+        
+        if not class_folder.exists():
+            return jsonify({'error': f'Dataset folder not found: {class_folder}', 'images': []})
+        
+        # Get all image files
+        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif'}
+        all_images = []
+        
+        for img_file in class_folder.iterdir():
+            if img_file.suffix.lower() in image_extensions:
+                # Use relative path from static folder for web serving
+                relative_path = f"static/dataset/{class_name.capitalize()}/{img_file.name}"
+                all_images.append({
+                    'path': relative_path,
+                    'name': img_file.name,
+                    'class': class_name
+                })
+        
+        # Sort by name
+        all_images.sort(key=lambda x: x['name'])
+        
+        # Pagination
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_images = all_images[start_idx:end_idx]
+        
+        return jsonify({
+            'images': paginated_images,
+            'total': len(all_images),
+            'page': page,
+            'per_page': per_page,
+            'has_more': end_idx < len(all_images)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/classify_folder', methods=['POST'])
+def classify_folder():
+    """Classify multiple images from a folder"""
+    if 'username' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    try:
+        files = request.files.getlist('files')
+        folder_name = request.form.get('folder_name', 'Unknown Folder')
+        
+        if not files:
+            return jsonify({'error': 'No files provided'}), 400
+        
+        # Classification results
+        results = {
+            'ripe': 0,
+            'rotten': 0,
+            'unripe': 0
+        }
+        
+        input_size = (cls_input_details[0]['shape'][1], cls_input_details[0]['shape'][2])
+        
+        # Process each file
+        for file in files:
+            try:
+                # Read image
+                image_stream = file.read()
+                image = Image.open(io.BytesIO(image_stream)).convert('RGB')
+                
+                # Resize and preprocess
+                img_resized = image.resize(input_size)
+                img_array = np.array(img_resized, dtype=np.float32) / 255.0
+                img_array = np.expand_dims(img_array, axis=0)
+                
+                # Run classification
+                cls_interpreter.set_tensor(cls_input_details[0]['index'], img_array)
+                cls_interpreter.invoke()
+                output_data = cls_interpreter.get_tensor(cls_output_details[0]['index'])[0]
+                
+                # Get prediction
+                pred_class = np.argmax(output_data)
+                pred_label = _normalize_label(cls_labels[pred_class])
+                
+                # Update results
+                results[pred_label] += 1
+                
+            except Exception as e:
+                print(f"Error processing file {file.filename}: {str(e)}")
+                continue
+        
+        total = sum(results.values())
+        
+        if total == 0:
+            return jsonify({'error': 'No images could be classified'}), 400
+        
+        return jsonify({
+            'folder_name': folder_name,
+            'total': total,
+            'summary': results
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/upload', methods=['POST'])
@@ -883,8 +1092,8 @@ def save_crop_endpoint():
             image_data = base64.b64decode(base64_data)
             image = Image.open(io.BytesIO(image_data))
         else:
-            # If it's a file path, load the image directly
-            image = Image.open(os.path.join('static', crop_path))
+            # If it's a file path, load the image directly from configured storage
+            image = Image.open(_image_fs_path(crop_path))
 
         # Generate new base filename
         base_name = generate_base_filename()
@@ -892,8 +1101,8 @@ def save_crop_endpoint():
         place = 1
         # Create filename with place number
         filename = f"{base_name}_{place}.jpg"
-        save_path = os.path.join(UPLOAD_FOLDER, filename)
-        
+        save_path = _image_fs_path(filename)
+
         # Save the image
         image.save(save_path)
         
@@ -902,7 +1111,7 @@ def save_crop_endpoint():
 
         return jsonify({
             'success': True,
-            'saved_path': os.path.join('uploads', filename)
+            'saved_path': _image_url(filename)
         })
 
     except Exception as e:
@@ -944,7 +1153,7 @@ def save_all_classifications():
             
             # Save original image with (-) place number
             original_filename = f"{base_name}(-){extension}"
-            original_path = os.path.join(UPLOAD_FOLDER, original_filename)
+            original_path = _image_fs_path(original_filename)
             
             with open(original_path, 'wb') as f:
                 f.write(image_bytes)
@@ -965,7 +1174,7 @@ def save_all_classifications():
             
             # Save detection image with (0)
             detection_filename = f"{base_name}(0){extension}"
-            detection_path = os.path.join(UPLOAD_FOLDER, detection_filename)
+            detection_path = _image_fs_path(detection_filename)
             
             with open(detection_path, 'wb') as f:
                 f.write(image_bytes)
@@ -996,7 +1205,7 @@ def save_all_classifications():
             
             # Save crop with sequential number in parentheses - USING SAME base_name
             crop_filename = f"{base_name}({i}){extension}"
-            crop_path = os.path.join(UPLOAD_FOLDER, crop_filename)
+            crop_path = _image_fs_path(crop_filename)
             
             try:
                 with open(crop_path, 'wb') as f:
@@ -1164,7 +1373,7 @@ def get_validate_history_by_date():
             result_items.append({
                 'id': key,
                 'filename': f"{gi['base_name']}(-).jpg",
-                'image_path': f"static/uploads/{gi['base_name']}(-).jpg",
+                'image_path': _image_url(f"{gi['base_name']}(-).jpg"),
                 'timestamp': time_part,
                 'detection_count': len(entries),
                 'classifications': classifications,
@@ -1216,7 +1425,7 @@ def get_validate_history_detail():
                 continue
             items.append({
                 'file_name': fname,
-                'image_path': f"static/uploads/{fname}",
+                'image_path': _image_url(fname),
                 'class_result': e.get('class_result', 'Unknown'),
                 'valid_status': bool(e.get('valid_status', False)),
                 'place': e.get('place')
@@ -1239,7 +1448,7 @@ def get_validate_history_detail():
             summary[cls_name] = summary.get(cls_name, 0) + 1
 
         return jsonify({
-            'base_image': f"setmutu/static/uploads/{base_name}(-).jpg",
+            'base_image': _image_url(f"{base_name}(-).jpg"),
             'timestamp': batch_ts,
             'username_yang_mengubah': username_change,
             'items': items,
@@ -1312,7 +1521,7 @@ def get_history_by_date():
                     original_images.append({
                         'id': base_name,
                         'filename': filename,
-                        'image_path': f"static/uploads/{filename}",
+                        'image_path': _image_url(filename),
                         'timestamp': formatted_time,
                         'detection_count': detection_count,
                         'classifications': classifications,
@@ -1348,12 +1557,12 @@ def get_history_by_date():
                     
                     if entry['place'] == '-':
                         # Original image
-                        date_items[base_name]['image_path'] = f"static/uploads/{filename}"
+                        date_items[base_name]['image_path'] = _image_url(filename)
                     elif entry['place'] > 0:
                         # Count detections
                         date_items[base_name]['detection_count'] += 1
                         date_items[base_name]['crops'].append({
-                            'image': f"static/uploads/{filename}",
+                            'image': _image_url(filename),
                             'classification': entry['class_result'],
                             'confidence': 100  # Add actual confidence if available
                         })
@@ -1461,7 +1670,7 @@ def get_detection_details():
 
         for entry in entries:
             filename = entry['file_name']
-            image_path = f"static/uploads/{filename}"
+            image_path = _image_url(filename)
 
             if entry['place'] == '-':
                 details['original_image'] = image_path
