@@ -1696,6 +1696,43 @@ def get_detection_details():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/get_monthly_statistics', methods=['POST'])
+def setmutu_get_monthly_statistics():
+    """Get monthly statistics for entire month regardless of date filter"""
+    if 'username' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    try:
+        data = request.get_json()
+        year = data.get('year')
+        month = data.get('month')  # Optional - if not provided, get whole year
+        
+        if year is None:
+            return jsonify({'error': 'Year is required'}), 400
+            
+        # Get current user's group from session
+        current_user_group = session.get('group', 'user')
+        
+        # Get statistics from database
+        if month is not None:
+            # Get data for specific month
+            items = validation_handler.get_monthly_ticket_data(year, month + 1, current_user_group)  # Convert to 1-based month
+        else:
+            # Get data for entire year
+            items = validation_handler.get_yearly_ticket_data(year, current_user_group)
+        
+        return jsonify({
+            'success': True,
+            'items': items,
+            'year': year,
+            'month': month,
+            'count': len(items)
+        })
+        
+    except Exception as e:
+        print(f"Error in setmutu_get_monthly_statistics: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 # Routes with /setmutu/ prefix for UI navigation
 @app.route('/setmutu/')
@@ -1817,43 +1854,6 @@ def setmutu_get_history_by_date():
 @app.route('/setmutu/get_detection_details', methods=['POST'])
 def setmutu_get_detection_details():
     return get_detection_details()
-
-@app.route('/setmutu/get_monthly_statistics', methods=['POST'])
-def setmutu_get_monthly_statistics():
-    """Get monthly statistics for entire month regardless of date filter"""
-    if 'username' not in session:
-        return jsonify({'error': 'Authentication required'}), 401
-    
-    try:
-        data = request.get_json()
-        year = data.get('year')
-        month = data.get('month')  # Optional - if not provided, get whole year
-        
-        if year is None:
-            return jsonify({'error': 'Year is required'}), 400
-            
-        # Get current user's group from session
-        current_user_group = session.get('group', 'user')
-        
-        # Get statistics from database
-        if month is not None:
-            # Get data for specific month
-            items = validation_handler.get_monthly_ticket_data(year, month + 1, current_user_group)  # Convert to 1-based month
-        else:
-            # Get data for entire year
-            items = validation_handler.get_yearly_ticket_data(year, current_user_group)
-        
-        return jsonify({
-            'success': True,
-            'items': items,
-            'year': year,
-            'month': month,
-            'count': len(items)
-        })
-        
-    except Exception as e:
-        print(f"Error in setmutu_get_monthly_statistics: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/setmutu/set_status', methods=['POST'])
 def setmutu_set_status():

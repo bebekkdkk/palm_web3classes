@@ -261,11 +261,9 @@ class ValidationHandler:
         """Verify/update classification and save to validations table. Returns (bool, message)."""
         try:
             # Extract filename from crop_path
-            filename = os.path.basename(crop_path)
+            filename = os.path.basename(str(crop_path).split('?', 1)[0])
             if filename.startswith('/'):
                 filename = filename[1:]
-            if filename.startswith('static/uploads/'):
-                filename = filename[15:]
             
             # Extract place from filename
             place = None
