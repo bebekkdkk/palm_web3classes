@@ -473,9 +473,10 @@
 
                     <!-- Training Navigation -->
                     <div class="text-center mt-5">
-                        <button onclick="submitAllClasses()" class="btn btn-success me-3">
+                        <button id="saveAllBtn" onclick="submitAllClasses()" class="btn btn-success me-3">
                             <i class="bi bi-save me-2"></i>
-                            Save All Classifications
+                            <span id="saveAllBtnText">Save All Classifications</span>
+                            <span id="saveAllBtnSpinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
                         </button>
                         <a href="/setmutu/train" class="btn btn-primary">
                             <i class="bi bi-gear me-2"></i>
@@ -776,7 +777,17 @@
         }
 
         async function submitAllClasses() {
+            const saveBtn = document.getElementById('saveAllBtn');
+            const saveBtnText = document.getElementById('saveAllBtnText');
+            const saveBtnSpinner = document.getElementById('saveAllBtnSpinner');
+            const saveBtnIcon = saveBtn.querySelector('.bi-save');
+            
             try {
+                // Show loading state
+                saveBtn.disabled = true;
+                saveBtnText.textContent = 'Saving...';
+                saveBtnSpinner.classList.remove('d-none');
+                
                 const processedImage = document.getElementById('processedImage');
                 const cropCards = document.querySelectorAll('.crop-card');
                 
@@ -807,15 +818,33 @@
                 
                 const data = await response.json();
                 if (data.success) {
-                    showToast('Successfully saved all classifications!');
                     // Mark all cards as saved
                     cropCards.forEach(card => card.classList.add('saved'));
+                    
+                    // Hide spinner
+                    saveBtnSpinner.classList.add('d-none');
+                    
+                    // Change button to completed state with animation
+                    saveBtnIcon.classList.remove('bi-save');
+                    saveBtnIcon.classList.add('bi-check-circle-fill');
+                    saveBtnText.textContent = 'Completed';
+                    saveBtn.classList.remove('btn-success');
+                    saveBtn.classList.add('btn-secondary', 'btn-completed');
+                    saveBtn.disabled = true;
+                    
+                    // Show success message
+                    showToast('Successfully saved all classifications!', 'success');
                 } else {
                     throw new Error(data.error || 'Failed to save classifications');
                 }
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Failed to save classifications: ' + error.message, 'danger');
+                
+                // Reset button state on error
+                saveBtn.disabled = false;
+                saveBtnText.textContent = 'Save All Classifications';
+                saveBtnSpinner.classList.add('d-none');
             }
         }
     </script>
@@ -899,8 +928,31 @@
             opacity: 0.7;
             cursor: not-allowed;
         }
+        .btn-secondary:disabled {
+            opacity: 1;
+            cursor: not-allowed;
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
         .btn-outline-success {
             pointer-events: none;
+        }
+        
+        /* Completed button animation */
+        @keyframes buttonSuccess {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .btn-completed {
+            animation: buttonSuccess 0.3s ease-in-out;
         }
     </style>
 </body>
